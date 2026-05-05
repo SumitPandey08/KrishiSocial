@@ -70,7 +70,9 @@ function EditProfileContent() {
     try {
       const updatedUser = await updateProfilePicture(formData);
       setProfilePicture(updatedUser.profilePicture);
-      setUser({ ...user, profilePicture: updatedUser.profilePicture });
+      if (user) {
+        setUser({ ...user, profilePicture: updatedUser.profilePicture });
+      }
     } catch (error) {
       console.error("Failed to upload image", error);
       alert("Failed to upload image. Please try again.");
