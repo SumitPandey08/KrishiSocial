@@ -34,14 +34,18 @@ export default function Posts({ activeFilter = 'All' }: PostsProps) {
           postId={post._id}
           user={{
             name: post.user.name,
+            username: post.user.username,
             profilePhoto: post.user.profilePicture || 'https://via.placeholder.com/150',
-            id: post.user._id
+            id: post.user._id,
+            role: post.user.role
           }}
           caption={post.caption}
           likes={post.likesCount}
           commentsCount={post.commentsCount}
           uploadedAt={new Date(post.createdAt).toLocaleDateString()}
           isLiked={post.isLiked || false}
+          votesScore={post.votesScore}
+          userVote={post.userVote}
           postImage={post.media && post.media.length > 0 ? post.media[0].url : undefined}
           postType={post.postType}
         />

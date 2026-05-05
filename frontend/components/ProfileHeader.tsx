@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { LogOut, Grid, HelpCircle, MapPin, LandPlot, Sprout } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Link from 'next/link';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -77,9 +78,12 @@ export default function ProfileHeader({
       <div className="flex gap-3 mb-6">
         {isOwnProfile ? (
           <>
-            <button className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95">
+            <Link 
+              href="/edit-profile"
+              className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95 flex items-center justify-center"
+            >
               Edit Profile
-            </button>
+            </Link>
             <button className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95">
               Share Profile
             </button>

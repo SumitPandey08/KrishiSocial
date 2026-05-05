@@ -47,7 +47,9 @@ export default function Posts({ activeFilter = 'All' }: PostsProps) {
           key={item._id}
           postId={item._id}
           user={{
-            name: item.user.username || item.user.name,
+            id: item.user._id,
+            username: item.user.username,
+            name: item.user.name,
             profilePhoto: item.user.profilePicture || 'https://via.placeholder.com/150',
           }}
           postImage={item.media[0]?.url}

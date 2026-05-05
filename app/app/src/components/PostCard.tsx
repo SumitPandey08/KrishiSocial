@@ -11,6 +11,7 @@ interface PostCardProps {
   postId: string;
   user: {
     id?: string;
+    username: string;
     name: string;
     profilePhoto: string;
   };
@@ -40,7 +41,7 @@ export default function PostCard({
   const { user: currentUser } = useUser();
   const router = useRouter();
 
-  const isCreator = currentUser?.username === user.name || currentUser?.id === user.id;
+  const isCreator = currentUser?.username === user.username || currentUser?.id === user.id;
 
   const handleLike = () => {
     toggleLike(postId);
@@ -119,7 +120,7 @@ export default function PostCard({
   };
 
   const handleNavigateToProfile = () => {
-    router.push(`/profile/${user.name}`);
+    router.push(`/profile/${user.username}`);
   };
 
   const handleWhatsAppShare = () => {

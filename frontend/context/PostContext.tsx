@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { 
   getPosts as fetchPostsApi, 
   toggleLike as toggleLikeApi, 
+  toggleVote as toggleVoteApi,
+  toggleCommentVote as toggleCommentVoteApi,
   deletePost as deletePostApi 
 } from "../services/postService";
 
@@ -14,6 +16,7 @@ interface Post {
     name: string;
     username: string;
     profilePicture?: string;
+    role?: string;
   };
   media: Array<{
     url: string;
@@ -23,6 +26,10 @@ interface Post {
   caption: string;
   likesCount: number;
   commentsCount: number;
+  upvotesCount: number;
+  downvotesCount: number;
+  votesScore: number;
+  userVote?: 'upvote' | 'downvote' | null;
   createdAt: string;
   isLiked?: boolean;
   postType: 'update' | 'question' | 'community';
@@ -34,6 +41,8 @@ interface PostContextType {
   fetchPosts: () => Promise<void>;
   addPost: (post: Post) => void;
   toggleLike: (postId: string) => Promise<void>;
+  toggleVote: (postId: string, type: 'upvote' | 'downvote') => Promise<void>;
+  toggleCommentVote: (postId: string, commentId: string, type: 'upvote' | 'downvote') => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
 }
 
@@ -98,6 +107,66 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [fetchPosts]);
 
+  const toggleVote = useCallback(async (postId: string, type: 'upvote' | 'downvote') => {
+    setPosts((prevPosts) => {
+      return prevPosts.map((p) => {
+        if (p._id === postId) {
+          const currentVote = p.userVote;
+          let newVote: 'upvote' | 'downvote' | null = type;
+          let scoreChange = 0;
+
+          if (currentVote === type) {
+            newVote = null;
+            scoreChange = type === 'upvote' ? -1 : 1;
+          } else {
+            if (currentVote === 'upvote') scoreChange = -2; // from up to down
+            else if (currentVote === 'downvote') scoreChange = 2; // from down to up
+            else scoreChange = type === 'upvote' ? 1 : -1; // from none to up/down
+          }
+
+          return {
+            ...p,
+            userVote: newVote,
+            votesScore: (p.votesScore || 0) + scoreChange
+          };
+        }
+        return p;
+      });
+    });
+
+    try {
+      const response = await toggleVoteApi(postId, type);
+      if (response) {
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p._id === postId
+              ? { 
+                  ...p, 
+                  upvotesCount: response.upvotesCount, 
+                  downvotesCount: response.downvotesCount, 
+                  votesScore: response.votesScore,
+                  userVote: response.userVote 
+                }
+              : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling vote:", error);
+      fetchPosts();
+    }
+  }, [fetchPosts]);
+
+  const toggleCommentVote = useCallback(async (postId: string, commentId: string, type: 'upvote' | 'downvote') => {
+    try {
+        await toggleCommentVoteApi(commentId, type);
+        // Optimistic update for comments would require another context or a more complex state,
+        // but for now we just call the API.
+    } catch (error) {
+        console.error("Error toggling comment vote:", error);
+    }
+  }, []);
+
   const deletePost = useCallback(async (postId: string) => {
     try {
       await deletePostApi(postId);
@@ -119,6 +188,8 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchPosts,
         addPost,
         toggleLike,
+        toggleVote,
+        toggleCommentVote,
         deletePost,
       }}
     >

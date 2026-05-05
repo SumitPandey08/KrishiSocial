@@ -12,14 +12,36 @@ export const getWeather = async (lat: number, lon: number) => {
   }
 };
 
-export const getCropRecommendation = async (location: string) => {
+export const getCropRecommendation = async (location: string | { lat: number; lon: number }) => {
   try {
-    const response = await api.get("/agent/crop-recommendation", {
-      params: { location }
-    });
+    const params = typeof location === 'string' 
+      ? { location }
+      : { lat: location.lat, lon: location.lon };
+    
+    const response = await api.get("/agent/crop-recommendation", { params });
     return response.data;
   } catch (error) {
     console.error("Get crop recommendation error:", error);
+    throw error;
+  }
+};
+
+export const getAdvancedCropRecommendation = async (params: {
+  lat: number;
+  lon: number;
+  n?: number;
+  p?: number;
+  k?: number;
+  ph?: number;
+  budget?: number;
+  waterAvailability?: string;
+  durationPreference?: string;
+}) => {
+  try {
+    const response = await api.get("/farmer/recommend", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Get advanced crop recommendation error:", error);
     throw error;
   }
 };

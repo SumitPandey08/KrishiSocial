@@ -16,7 +16,14 @@ import User from "../model/user.model.js";
 
 const router = express.Router();
 
-router.get("/me", protect, getMyProfile);
+// Public routes
+router.get("/:username", getUserProfile);
+router.get("/search", searchUsers);
+
+// Protected routes
+router.use(protect);
+
+router.get("/me", getMyProfile);
 router.put("/me", protect, updateProfile);
 router.delete("/me/deactivate", protect, deactivateAccount);
 
@@ -38,12 +45,10 @@ router.put("/me/picture", protect, upload.single("profilePicture"), async (req, 
   }
 });
 
-router.get("/search", searchUsers);
-router.get("/:username", protect, getUserProfile);
 router.post("/:userId/toggle-follow", protect, toggleFollow);
 // router.post("/:userId/follow", protect, followUser);
 // router.post("/:userId/unfollow", protect, unfollowUser);
-router.get("/:userId/followers", getFollowers);
-router.get("/:userId/following", getFollowing);
+router.get("/:userId/followers", protect, getFollowers);
+router.get("/:userId/following", protect, getFollowing);
 
 export default router;

@@ -79,7 +79,25 @@ const postSchema = new mongoose.Schema(
       default: false,
     },
 
-    // 🔥 IMPORTANT: store only counts
+    // 🔥 Reddit-style voting
+    upvotesCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    downvotesCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    votesScore: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
     likesCount: {
       type: Number,
       default: 0,
@@ -125,9 +143,7 @@ const postSchema = new mongoose.Schema(
 
 // 🔥 Important indexes for feed & explore
 postSchema.index({ createdAt: -1 });
-postSchema.index({ likesCount: -1 });
-postSchema.index({ hashtags: 1 });
-postSchema.index({ tags: 1 });
+postSchema.index({ votesScore: -1 });
 
 const Post = mongoose.model("Post", postSchema);
 

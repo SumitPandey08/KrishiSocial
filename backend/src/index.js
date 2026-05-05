@@ -11,6 +11,7 @@ import postRoutes from "./route/post.route.js";
 import storyRoutes from "./route/story.route.js";
 import farmerRoutes from "./route/farmer.route.js";
 import agentRoutes from "./route/agent.route.js";
+import communityRoutes from "./route/community.route.js";
 
 // Socket
 import { initSocket } from "./config/socket.js";
@@ -45,6 +46,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/farmer", farmerRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/community", communityRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

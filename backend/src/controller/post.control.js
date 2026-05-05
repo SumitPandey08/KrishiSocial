@@ -6,6 +6,7 @@ import Comment from "../model/comment.model.js";
 import Like from "../model/like.model.js";
 import CommentLike from "../model/commentLike.model.js";
 import Community from "../model/community.model.js";
+import Vote from "../model/vote.model.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 /*
@@ -78,7 +79,7 @@ export const createPost = async (req, res) => {
 
     await User.findByIdAndUpdate(req.user.id, { $inc: { postsCount: 1 } });
 
-    const populatedPost = await post.populate("user", "name username profilePicture");
+    const populatedPost = await post.populate("user", "name username profilePicture role");
 
     res.status(201).json(populatedPost);
   } catch (error) {
@@ -136,7 +137,7 @@ export const getFeed = async (req, res) => {
                 25, 0]
               },
               { $cond: [{ $eq: ["$author.role", "expert"] }, 20, 0] },
-              { $add: ["$likesCount", { $multiply: ["$commentsCount", 2] }] }
+              { $add: ["$votesScore", { $multiply: ["$commentsCount", 2] }] }
             ]
           },
           isLiked: false
@@ -162,11 +163,21 @@ export const getFeed = async (req, res) => {
     
     const likedPostIds = likedPosts.map(l => l.post.toString());
 
-    const finalPosts = posts.map(post => ({
-      ...post,
-      user: post.author,
-      isLiked: likedPostIds.includes(post._id.toString())
-    }));
+    // Also check for votes
+    const userVotes = await Vote.find({
+        user: req.user.id,
+        post: { $in: postIds }
+    });
+
+    const finalPosts = posts.map(post => {
+        const userVote = userVotes.find(v => v.post && v.post.toString() === post._id.toString());
+        return {
+            ...post,
+            user: post.author,
+            isLiked: likedPostIds.includes(post._id.toString()),
+            userVote: userVote ? userVote.type : null
+        }
+    });
 
     res.json(finalPosts);
   } catch (error) {
@@ -177,26 +188,89 @@ export const getFeed = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| Toggle Vote (Reddit-style)
+|--------------------------------------------------------------------------
+*/
+export const togglePostVote = async (req, res) => {
+    try {
+        const { id: postId } = req.params;
+        const { type } = req.body; // "upvote" or "downvote"
+        const userId = req.user.id;
+
+        if (!["upvote", "downvote"].includes(type)) {
+            return res.status(400).json({ message: "Invalid vote type" });
+        }
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ message: "Post not found" });
+
+        const existingVote = await Vote.findOne({ user: userId, post: postId });
+
+        if (existingVote) {
+            if (existingVote.type === type) {
+                // Remove vote (neutralize)
+                await existingVote.deleteOne();
+            } else {
+                // Change vote type
+                existingVote.type = type;
+                await existingVote.save();
+            }
+        } else {
+            // Create new vote
+            await Vote.create({ user: userId, post: postId, type });
+        }
+
+        // Recalculate scores
+        const upvotes = await Vote.countDocuments({ post: postId, type: "upvote" });
+        const downvotes = await Vote.countDocuments({ post: postId, type: "downvote" });
+
+        post.upvotesCount = upvotes;
+        post.downvotesCount = downvotes;
+        post.votesScore = upvotes - downvotes;
+        await post.save();
+
+        // Update author reputation/helpScore
+        const authorId = post.user;
+        const scoreChange = type === "upvote" ? 1 : -1;
+        await User.findByIdAndUpdate(authorId, { $inc: { helpScore: scoreChange } });
+
+        res.json({
+            message: "Vote updated",
+            upvotesCount: post.upvotesCount,
+            downvotesCount: post.downvotesCount,
+            votesScore: post.votesScore
+        });
+
+    } catch (error) {
+        console.error("Toggle post vote error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+/*
+|--------------------------------------------------------------------------
 | Get Single Post
 |--------------------------------------------------------------------------
 */
 export const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate("user", "name username profilePicture");
+      .populate("user", "name username profilePicture role");
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
     const isLiked = await Like.exists({ user: req.user.id, post: post._id });
+    const userVote = await Vote.findOne({ user: req.user.id, post: post._id });
 
     post.viewsCount += 1;
     await post.save();
 
     res.json({
       ...post.toObject(),
-      isLiked: !!isLiked
+      isLiked: !!isLiked,
+      userVote: userVote ? userVote.type : null
     });
   } catch (error) {
     console.error(error);
@@ -291,45 +365,63 @@ export const commentOnPost = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| Upvote / Downvote Answer (Comment)
+| Upvote / Downvote Answer (Comment) - REDDIT STYLE
 |--------------------------------------------------------------------------
 */
-export const toggleCommentLike = async (req, res) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.user.id;
-    const action = req.query.action || "like";
+export const toggleCommentVote = async (req, res) => {
+    try {
+        const { commentId } = req.params;
+        const { type } = req.body; // "upvote" or "downvote"
+        const userId = req.user.id;
 
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
+        if (!["upvote", "downvote"].includes(type)) {
+            return res.status(400).json({ message: "Invalid vote type" });
+        }
+
+        const comment = await Comment.findById(commentId);
+        if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+        const existingVote = await Vote.findOne({ user: userId, comment: commentId });
+
+        if (existingVote) {
+            if (existingVote.type === type) {
+                // Remove vote (neutralize)
+                await existingVote.deleteOne();
+            } else {
+                // Change vote type
+                existingVote.type = type;
+                await existingVote.save();
+            }
+        } else {
+            // Create new vote
+            await Vote.create({ user: userId, comment: commentId, type });
+        }
+
+        // Recalculate scores
+        const upvotes = await Vote.countDocuments({ comment: commentId, type: "upvote" });
+        const downvotes = await Vote.countDocuments({ comment: commentId, type: "downvote" });
+
+        comment.upvotesCount = upvotes;
+        comment.downvotesCount = downvotes;
+        comment.votesScore = upvotes - downvotes;
+        await comment.save();
+
+        // Update commenter reputation/helpScore
+        const authorId = comment.user;
+        const scoreChange = type === "upvote" ? 2 : -1; // More weight for helpful comments
+        await User.findByIdAndUpdate(authorId, { $inc: { helpScore: scoreChange } });
+
+        res.json({
+            message: "Comment vote updated",
+            upvotesCount: comment.upvotesCount,
+            downvotesCount: comment.downvotesCount,
+            votesScore: comment.votesScore
+        });
+
+    } catch (error) {
+        console.error("Toggle comment vote error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-
-    const existingLike = await CommentLike.findOne({ user: userId, comment: commentId });
-
-    if (action === "like") {
-      if (!existingLike) {
-        await CommentLike.create({ user: userId, comment: commentId });
-      }
-    } else {
-      if (existingLike) {
-        await existingLike.deleteOne();
-      }
-    }
-    
-    const totalLikes = await CommentLike.countDocuments({ comment: commentId });
-    comment.likesCount = totalLikes;
-    
-    await comment.save();
-    res.json({ 
-      message: `Comment ${action}d successfully`, 
-      likesCount: comment.likesCount,
-      isLiked: action === "like"
-    });
-  } catch (error) {
-    console.error("Toggle comment like error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
 };
 
 /*
@@ -430,23 +522,25 @@ export const getComments = async (req, res) => {
   try {
     const comments = await Comment.find({ post: req.params.id })
       .populate("user", "name username profilePicture role")
-      .sort({ isBestAnswer: -1, likesCount: -1, createdAt: -1 });
+      .sort({ isBestAnswer: -1, votesScore: -1, createdAt: -1 });
 
-    // Check which comments are liked by current user
+    // Check which comments are voted by current user
     const commentIds = comments.map(c => c._id);
-    const likedComments = await CommentLike.find({
-      user: req.user.id,
-      comment: { $in: commentIds }
-    }).select("comment");
+    
+    const userVotes = await Vote.find({
+        user: req.user.id,
+        comment: { $in: commentIds }
+    });
 
-    const likedCommentIds = likedComments.map(l => l.comment.toString());
+    const finalComments = comments.map(c => {
+        const userVote = userVotes.find(v => v.comment && v.comment.toString() === c._id.toString());
+        return {
+            ...c.toObject(),
+            userVote: userVote ? userVote.type : null
+        };
+    });
 
-    const commentsWithIsLiked = comments.map(c => ({
-      ...c.toObject(),
-      isLiked: likedCommentIds.includes(c._id.toString())
-    }));
-
-    res.json(commentsWithIsLiked);
+    res.json(finalComments);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error: error.message });

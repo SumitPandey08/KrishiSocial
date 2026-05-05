@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search as SearchIcon, X, User, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search as SearchIcon, X, User, ChevronRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import AppLayout from '@/components/AppLayout';
+import { searchUsers } from '@/services/userService';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,34 +14,73 @@ function cn(...inputs: ClassValue[]) {
 
 const RECENT_SEARCHES = ['Ramesh Kumar', 'Organic Wheat', 'Tractors for Rent', 'Pest Control'];
 
-const SEARCH_RESULTS = [
-  { id: '1', name: 'Ramesh Kumar', username: 'ramesh_farmer', followers: '1.2K', avatar: 'https://via.placeholder.com/150' },
-  { id: '2', name: 'Rajesh Patil', username: 'rajesh_krishi', followers: '850', avatar: 'https://via.placeholder.com/150' },
-  { id: '3', name: 'Rahul Deshmukh', username: 'rahul_organic', followers: '2.1K', avatar: 'https://via.placeholder.com/150' },
-];
+interface SearchResult {
+  _id: string;
+  name: string;
+  username: string;
+  profilePicture?: string;
+  followersCount: number;
+  isVerified: boolean;
+  role: string;
+}
 
-export default function SearchPage() {
+function SearchContent() {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleClear = () => setQuery('');
+  const handleSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await searchUsers(searchQuery);
+      setResults(data);
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch(query);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [query, handleSearch]);
+
+  const handleClear = () => {
+    setQuery('');
+    setResults([]);
+  };
 
   return (
-    <div className="max-w-screen-md mx-auto min-h-screen bg-white pb-24">
+    <div className="max-w-screen-md mx-auto min-h-screen pb-24 bg-white">
       {/* Search Header */}
       <div className="p-4 border-b border-gray-100 sticky top-0 bg-white z-50">
-         <div className="flex items-center bg-gray-100 h-12 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-[#2E7D32]/20 transition-all">
-            <SearchIcon size={20} className="text-gray-400" />
+         <div className="flex items-center bg-gray-100 h-12 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-[#2E7D32]/20 transition-all border border-transparent focus-within:border-[#2E7D32]/10 focus-within:bg-white">
+            {loading ? (
+               <Loader2 size={20} className="text-[#2E7D32] animate-spin" />
+            ) : (
+               <SearchIcon size={20} className="text-gray-400" />
+            )}
             <input 
               autoFocus
               type="text" 
               placeholder="Search farmers, experts, or topics..." 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 ml-3 bg-transparent outline-none text-sm font-bold text-gray-900"
+              className="flex-1 ml-3 bg-transparent outline-none text-sm font-bold text-gray-900 placeholder:text-gray-400"
             />
             {query && (
-              <button onClick={handleClear} className="p-1 text-gray-400 hover:text-gray-600">
+              <button onClick={handleClear} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
                  <X size={18} />
               </button>
             )}
@@ -47,56 +88,87 @@ export default function SearchPage() {
       </div>
 
       <div className="p-6">
-         {!query ? (
-           <section>
-              <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Recent Searches</h3>
-                 <button className="text-[10px] font-black text-[#2E7D32] uppercase">Clear All</button>
-              </div>
-              <div className="space-y-4">
-                 {RECENT_SEARCHES.map((item, i) => (
-                   <button 
-                     key={i} 
-                     onClick={() => setQuery(item)}
-                     className="flex items-center gap-3 w-full text-left group"
-                   >
-                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#F1F8F1] group-hover:text-[#2E7D32] transition-colors">
-                         <SearchIcon size={14} />
-                      </div>
-                      <span className="text-sm font-bold text-gray-700 group-hover:text-gray-900">{item}</span>
-                   </button>
-                 ))}
-              </div>
-           </section>
-         ) : (
-           <section>
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Found Farmers</h3>
-              <div className="space-y-6">
-                 {SEARCH_RESULTS.filter(u => u.name.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase())).map((user) => (
-                   <button 
-                     key={user.id} 
-                     onClick={() => router.push(`/profile/${user.username}`)}
-                     className="flex items-center gap-4 w-full text-left active:opacity-70 transition-opacity"
-                   >
-                      <img src={user.avatar} alt={user.name} className="w-14 h-14 rounded-full object-cover bg-gray-100" />
-                      <div className="flex-1">
-                         <h4 className="text-sm font-black text-gray-900">{user.name}</h4>
-                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">@{user.username} • {user.followers} Followers</p>
-                      </div>
-                      <ChevronRight size={20} className="text-gray-300" />
-                   </button>
-                 ))}
-                 
-                 {SEARCH_RESULTS.filter(u => u.name.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase())).length === 0 && (
-                   <div className="flex flex-col items-center justify-center py-10 opacity-30">
-                      <User size={48} className="text-gray-300 mb-4" />
-                      <p className="text-sm font-bold text-gray-500 text-center">No farmers found with that name.</p>
-                   </div>
-                 )}
-              </div>
-           </section>
-         )}
+         {!query && results.length === 0 ? (
+            <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+               <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.1em]">Recent Searches</h3>
+                  <button className="text-[10px] font-black text-[#2E7D32] uppercase hover:underline">Clear All</button>
+               </div>
+               <div className="space-y-4">
+                  {RECENT_SEARCHES.map((item, i) => (
+                    <button 
+                      key={i} 
+                      onClick={() => setQuery(item)}
+                      className="flex items-center gap-4 w-full text-left group"
+                    >
+                       <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#E8F5E9] group-hover:text-[#2E7D32] transition-all duration-300">
+                          <SearchIcon size={16} />
+                       </div>
+                       <span className="text-[15px] font-bold text-gray-700 group-hover:text-gray-900 transition-colors">{item}</span>
+                    </button>
+                  ))}
+               </div>
+            </section>
+          ) : (
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.1em]">Search Results</h3>
+                  <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{results.length} results</span>
+               </div>
+               
+               <div className="space-y-2">
+                  {results.map((user) => (
+                    <button 
+                      key={user._id} 
+                      onClick={() => router.push(`/profile/${user.username}`)}
+                      className="flex items-center gap-4 w-full p-3 rounded-2xl hover:bg-gray-50 transition-all group"
+                    >
+                       <div className="relative">
+                          <img 
+                            src={user.profilePicture || "https://via.placeholder.com/150"} 
+                            alt={user.name} 
+                            className="w-14 h-14 rounded-full object-cover bg-gray-100 ring-2 ring-white shadow-sm group-hover:scale-105 transition-transform" 
+                          />
+                          {user.isVerified && (
+                             <div className="absolute -bottom-0.5 -right-0.5 bg-[#2E7D32] text-white p-0.5 rounded-full border-2 border-white">
+                                <ChevronRight size={10} className="fill-current" />
+                             </div>
+                          )}
+                       </div>
+                       <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-[15px] font-black text-gray-900">{user.name}</h4>
+                            {user.role === 'expert' && (
+                               <span className="bg-[#E8F5E9] text-[#2E7D32] text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Expert</span>
+                            )}
+                          </div>
+                          <p className="text-[12px] font-bold text-gray-400 tracking-tight">@{user.username} • {user.followersCount} Followers</p>
+                       </div>
+                       <ChevronRight size={20} className="text-gray-300 group-hover:text-[#2E7D32] group-hover:translate-x-1 transition-all" />
+                    </button>
+                  ))}
+                  
+                  {!loading && query && results.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-20 animate-in fade-in zoom-in-95 duration-500">
+                       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                          <User size={40} className="text-gray-200" />
+                       </div>
+                       <p className="text-base font-black text-gray-900">No matches found</p>
+                       <p className="text-sm font-medium text-gray-400 mt-1">Try searching for something else</p>
+                    </div>
+                  )}
+               </div>
+            </section>
+          )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <AppLayout>
+      <SearchContent />
+    </AppLayout>
   );
 }

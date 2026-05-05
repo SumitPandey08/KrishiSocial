@@ -13,6 +13,7 @@ export const getWeather = async (city) => {
     temperature: res.data.main.temp,
     humidity: res.data.main.humidity,
     rainfall: res.data.rain?.["1h"] || 0,
-    coord: res.data.coord
+    coord: res.data.coord,
+    location: res.data.name
   };
 };

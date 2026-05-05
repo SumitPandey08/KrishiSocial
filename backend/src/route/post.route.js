@@ -4,12 +4,13 @@ import {
   getFeed,
   getPost,
   toggleLike,
+  togglePostVote,
   deletePost,
   deleteComment,
   commentOnPost,
   getComments,
   getLikes,
-  toggleCommentLike,
+  toggleCommentVote,
   markBestAnswer,
   verifyComment
 } from "../controller/post.control.js";
@@ -22,13 +23,14 @@ router.post("/", protect, upload.array("media", 10), createPost); // up to 10 fi
 router.get("/feed", protect, getFeed);
 router.get("/:id", protect, getPost);
 router.post("/:id/like", protect, toggleLike);
+router.patch("/:id/vote", protect, togglePostVote);
 router.delete("/:id", protect, deletePost);
 
 // Comments / Answers
 router.post("/:id/comment", protect, commentOnPost);
 router.get("/:id/comments", protect, getComments);
 router.delete("/comment/:commentId", protect, deleteComment);
-router.post("/comment/:commentId/like", protect, toggleCommentLike);
+router.patch("/comment/:commentId/vote", protect, toggleCommentVote);
 router.post("/comment/:commentId/best", protect, markBestAnswer);
 router.post("/comment/:commentId/verify", protect, verifyComment);
 

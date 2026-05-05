@@ -33,7 +33,7 @@ export const getUserProfile = async (req, res) => {
   try {
     const { username } = req.params;
 
-    const user = await User.findOne({ username }).select(
+    const user = await User.findOne({ username: username.toLowerCase() }).select(
       "name username bio website profilePicture followersCount followingCount postsCount accountType isVerified createdAt village district state farmSize cropsGrown farmingType role"
     );
 
@@ -41,14 +41,17 @@ export const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const isFollowing = await Follow.exists({
-      follower: req.user.id,
-      following: user._id,
-    });
+    let isFollowing = false;
+    if (req.user) {
+      isFollowing = await Follow.exists({
+        follower: req.user.id,
+        following: user._id,
+      });
+    }
 
     let posts = [];
 
-    if (user.accountType === "public" || isFollowing) {
+    if (user.accountType === "public" || isFollowing || (req.user && req.user.id === user._id.toString())) {
       posts = await Post.find({ user: user._id })
         .sort({ createdAt: -1 })
         .limit(12)

@@ -20,6 +20,24 @@ const commentSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
     },
+
+    // 🔥 Reddit-style voting
+    upvotesCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    downvotesCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    votesScore: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
     likesCount: {
       type: Number,
       default: 0,

@@ -30,6 +30,11 @@ const communitySchema = new mongoose.Schema(
     ],
     contentTypes: [
       {
+
+
+
+
+        
         type: String,
         enum: ["text", "image", "video", "voice"],
       },
@@ -42,6 +47,12 @@ const communitySchema = new mongoose.Schema(
     isPrivate: {
       type: Boolean,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+      index: true,
     },
   },
   { timestamps: true }

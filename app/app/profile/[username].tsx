@@ -8,7 +8,7 @@ import { getUserProfile } from '../src/services/userService'
 
 export default function ProfileScreen() {
   const { user: currentUser, logout } = useUser();
-  const { id: username } = useLocalSearchParams<{ id: string }>();
+  const { username } = useLocalSearchParams<{ username: string }>();
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
-        Alert.alert('Error', 'Could not load profile');
+        // Alert.alert('Error', 'Could not load profile');
       } finally {
         setLoading(false);
       }
