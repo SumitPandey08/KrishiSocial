@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getAdvancedCropRecommendation } from '@/services/farmerService';
 import AppLayout from '@/components/AppLayout';
+import { getCropImage } from '@/utils/cropImages';
 
 interface CropRecommendationV2 {
   name: string;
@@ -213,54 +214,61 @@ function CropAdvisorContent() {
 
             <div className="space-y-6">
               {recommendations.map((crop, i) => (
-                <div key={i} className="bg-white border-2 border-gray-100 rounded-[40px] p-8 hover:border-black transition-all duration-300 relative">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${crop.type === 'horticulture' ? 'bg-purple-50 text-purple-600' : crop.type === 'cash' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
-                          {crop.type}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          <Clock size={10} /> {crop.duration} Months
-                        </span>
+                <div key={i} className="bg-white border-2 border-gray-100 rounded-[40px] overflow-hidden hover:border-black transition-all duration-300 relative">
+                  <img 
+                    src={getCropImage(crop.name)} 
+                    alt={crop.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-8">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${crop.type === 'horticulture' ? 'bg-purple-50 text-purple-600' : crop.type === 'cash' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
+                            {crop.type}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <Clock size={10} /> {crop.duration} Months
+                          </span>
+                        </div>
+                        <h4 className="text-4xl font-black text-gray-900 leading-none">{crop.name}</h4>
                       </div>
-                      <h4 className="text-4xl font-black text-gray-900 leading-none">{crop.name}</h4>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Score</div>
-                      <div className="text-2xl font-black text-gray-900">{crop.suitability}%</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="bg-gray-50 p-5 rounded-3xl">
-                      <div className="flex items-center gap-2 text-gray-400 mb-2">
-                        <TrendingUp size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Expected ROI</span>
+                      <div className="text-right">
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Score</div>
+                        <div className="text-2xl font-black text-gray-900">{crop.suitability}%</div>
                       </div>
-                      <div className="text-xl font-black text-green-600">+{crop.roi}%</div>
                     </div>
-                    <div className="bg-gray-50 p-5 rounded-3xl">
-                      <div className="flex items-center gap-2 text-gray-400 mb-2">
-                        <Wallet size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Est. Net Profit</span>
+
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="bg-gray-50 p-5 rounded-3xl">
+                        <div className="flex items-center gap-2 text-gray-400 mb-2">
+                          <TrendingUp size={14} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Expected ROI</span>
+                        </div>
+                        <div className="text-xl font-black text-green-600">+{crop.roi}%</div>
                       </div>
-                      <div className="text-xl font-black text-gray-900">{crop.expectedProfit}</div>
+                      <div className="bg-gray-50 p-5 rounded-3xl">
+                        <div className="flex items-center gap-2 text-gray-400 mb-2">
+                          <Wallet size={14} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Est. Net Profit</span>
+                        </div>
+                        <div className="text-xl font-black text-gray-900">{crop.expectedProfit}</div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="bg-black/5 p-5 rounded-3xl mb-6">
-                    <div className="flex items-center gap-3 text-xs font-bold text-gray-800 leading-relaxed">
-                      <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
-                      {crop.why}
+                    <div className="bg-black/5 p-5 rounded-3xl mb-6">
+                      <div className="flex items-center gap-3 text-xs font-bold text-gray-800 leading-relaxed">
+                        <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
+                        {crop.why}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${
-                    crop.riskLevel === 'Low' ? 'bg-green-50 text-green-600' : 
-                    crop.riskLevel === 'Medium' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {crop.riskLevel} Risk Profile
+                    <div className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full w-fit ${
+                      crop.riskLevel === 'Low' ? 'bg-green-50 text-green-600' : 
+                      crop.riskLevel === 'Medium' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                      {crop.riskLevel} Risk Profile
+                    </div>
                   </div>
                 </div>
               ))}

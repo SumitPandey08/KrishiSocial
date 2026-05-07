@@ -55,10 +55,11 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["farmer", "expert", "krishi_center", "government"],
+      enum: ["farmer", "expert", "krishi_center", "government", "admin"],
       default: "farmer",
       index: true,
     },
+    
     location: {
       type: {
         type: String,

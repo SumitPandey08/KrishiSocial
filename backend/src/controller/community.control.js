@@ -13,9 +13,6 @@ export const createCommunity = async (req, res) => {
     if (autoApproveRoles.includes(req.user.role)) {
       status = "approved";
     } else if (needsApprovalRoles.includes(req.user.role)) {
-      if (!req.user.isVerified) {
-        return res.status(403).json({ message: "Only verified farmers can request community creation" });
-      }
       status = "pending";
     } else {
       return res.status(403).json({ message: "You are not authorized to create communities" });
@@ -35,8 +32,8 @@ export const createCommunity = async (req, res) => {
       name,
       description,
       tags,
-      creator: req.user.id,
-      members: [req.user.id],
+      creator: req.user._id,
+      members: [req.user._id],
       status,
     });
 
@@ -124,12 +121,12 @@ export const joinCommunity = async (req, res) => {
       return res.status(403).json({ message: "Community is not yet approved" });
     }
     
-    const isMember = community.members.some(memberId => memberId.toString() === req.user.id.toString());
+    const isMember = community.members.some(memberId => memberId.toString() === req.user._id.toString());
     if (isMember) {
       return res.status(400).json({ message: "Already a member" });
     }
     
-    community.members.push(req.user.id);
+    community.members.push(req.user._id);
     await community.save();
     
     res.json({ message: "Joined successfully" });   
@@ -149,12 +146,12 @@ export const leaveCommunity = async (req, res) => {
       return res.status(404).json({ message: "Community not found" });
     }
     
-    const isMember = community.members.some(memberId => memberId.toString() === req.user.id.toString());
+    const isMember = community.members.some(memberId => memberId.toString() === req.user._id.toString());
     if (!isMember) {
       return res.status(400).json({ message: "Not a member" });
     }
     
-    community.members = community.members.filter(member => member.toString() !== req.user.id.toString());
+    community.members = community.members.filter(member => member.toString() !== req.user._id.toString());
     await community.save();
     
     res.json({ message: "Left successfully" });   

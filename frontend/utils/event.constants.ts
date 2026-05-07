@@ -15,5 +15,4 @@ export const EVENTS = {
 
   //notifications
   NOTIFICATION_RECEIVED: "notificationReceived",
-
 };

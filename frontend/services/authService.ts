@@ -19,3 +19,13 @@ export const register = async (name: string, username: string, email: string, pa
     throw error;
   }
 };
+
+export const logout = async () => {
+  try {
+    const response = await api.post("/auth/logout");
+    return response.data;
+  } catch (error) {
+    console.error("Logout error:", error);
+    throw error;
+  }
+};

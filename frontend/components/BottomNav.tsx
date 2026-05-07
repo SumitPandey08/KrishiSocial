@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Home, Store, Plus, MessageSquare, User } from 'lucide-react';
+import { Home, Store, Plus, MessageSquare, User, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@/context/AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -13,13 +14,16 @@ function cn(...inputs: ClassValue[]) {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   const navItems = [
     { name: 'Home', icon: Home, path: '/' },
     { name: 'Mandi', icon: Store, path: '/mandi' },
     { name: 'Create', icon: Plus, path: '/create', isCenter: true },
     { name: 'Charcha', icon: MessageSquare, path: '/charcha' },
-    { name: 'Profile', icon: User, path: '/profile' },
+    ...(user?.role === 'admin' 
+      ? [{ name: 'Admin', icon: ShieldCheck, path: '/admin/dashboard' }] 
+      : [{ name: 'Profile', icon: User, path: `/profile/${user?.username || ''}` }]),
   ];
 
   return (

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Home, Store, PlusSquare, MessageSquare, User, Sun, Bell, Search, Menu, Sprout } from 'lucide-react';
+import { Home, Store, PlusSquare, MessageSquare, User, Sun, Bell, Search, Menu, Sprout, ShieldCheck, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -14,7 +14,13 @@ function cn(...inputs: ClassValue[]) {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, logout } = useUser();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
 
   const navItems = [
     { name: 'Home', icon: Home, path: '/' },
@@ -25,6 +31,7 @@ export default function Sidebar() {
     { name: 'Weather', icon: Sun, path: '/weather' },
     { name: 'Notifications', icon: Bell, path: '/notifications' },
     { name: 'Create', icon: PlusSquare, path: '/create' },
+    ...(user?.role === 'admin' ? [{ name: 'Admin', icon: ShieldCheck, path: '/admin/dashboard' }] : []),
     { name: 'Profile', icon: User, path: `/profile/${user?.username || ''}` },
   ];
 
@@ -82,6 +89,14 @@ export default function Sidebar() {
       {/* Footer Profile/More */}
       <div className="mt-auto pt-4">
         <div className="space-y-1">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-600 hover:bg-red-50 transition-all group"
+          >
+            <LogOut size={26} className="group-hover:scale-105 transition-transform" />
+            <span className="text-[15px] xl:text-base font-medium">Logout</span>
+          </button>
+          
           <button 
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all group"
           >

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import * as authService from "@/services/authService";
 
 interface User {
   id: string;
@@ -20,20 +21,21 @@ interface User {
   farmSize?: number;
   cropsGrown?: string[];
   farmingType?: string;
+  role?: string;
   isVerified?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null, token?: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   setUser: () => {},
-  logout: () => {},
+  logout: async () => {},
   loading: true,
 });
 
@@ -63,10 +65,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
   };
 
-  const logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("accessToken");
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Backend logout failed:", error);
+    } finally {
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      setUser(null);
+    }
   };
 
   return (

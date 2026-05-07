@@ -12,6 +12,9 @@ import storyRoutes from "./route/story.route.js";
 import farmerRoutes from "./route/farmer.route.js";
 import agentRoutes from "./route/agent.route.js";
 import communityRoutes from "./route/community.route.js";
+import adminRoutes from "./route/admin.route.js";
+import chatRoutes from "./route/chat.route.js";
+import messageRoutes from "./route/message.route.js";
 
 // Socket
 import { initSocket } from "./config/socket.js";
@@ -46,7 +49,10 @@ app.use("/api/posts", postRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/farmer", farmerRoutes);
 app.use("/api/agent", agentRoutes);
-app.use("/api/community", communityRoutes);
+app.use("/api/communities", communityRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/chats", chatRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

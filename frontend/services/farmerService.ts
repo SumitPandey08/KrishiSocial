@@ -26,6 +26,23 @@ export const getCropRecommendation = async (location: string | { lat: number; lo
   }
 };
 
+export const getMandiPrices = async (params: {
+  state?: string;
+  district?: string;
+  market?: string;
+  commodity?: string;
+  limit?: number;
+  offset?: number;
+} = {}) => {
+  try {
+    const response = await api.get("/farmer/mandi", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Get Mandi prices error:", error);
+    throw error;
+  }
+};
+
 export const getAdvancedCropRecommendation = async (params: {
   lat: number;
   lon: number;
