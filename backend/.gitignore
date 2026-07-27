@@ -1,7 +1,11 @@
 # dependencies
 node_modules/
 
+# dataset / raw data
+dataset/
+
 # logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -10,6 +14,7 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+*.env
 
 # misc
 .DS_Store

@@ -9,7 +9,7 @@ export const loadDataset = () => {
   if (isLoaded) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
-    const csvPath = path.join(process.cwd(), "src/dataset/Crop_recommendation.csv");
+    const csvPath = path.join(process.cwd(), "dataset/Crop_recommendation.csv");
 
     fs.createReadStream(csvPath)
       .pipe(csv())

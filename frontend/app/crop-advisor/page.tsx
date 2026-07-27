@@ -6,7 +6,7 @@ import {
   ArrowLeft, Sprout, MapPin, 
   AlertTriangle, CheckCircle2, 
   Navigation, Loader2, IndianRupee, Activity, 
-  TrendingUp, Wallet, Beaker, Waves, Clock, Info
+  TrendingUp, Wallet, Beaker, Waves, Clock, Info, Stethoscope
 } from 'lucide-react';
 import { getAdvancedCropRecommendation } from '@/services/farmerService';
 import AppLayout from '@/components/AppLayout';
@@ -104,6 +104,30 @@ function CropAdvisorContent() {
       </div>
 
       <div className="p-5">
+        {/* AI Doctor Shortcut Banner */}
+        <div 
+          onClick={() => router.push('/disease-detector')} 
+          className="bg-gradient-to-r from-emerald-900 via-green-800 to-teal-900 rounded-[32px] p-6 text-white mb-6 shadow-xl relative overflow-hidden cursor-pointer group hover:scale-[1.01] transition-all"
+        >
+          <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-400 rounded-full -mr-20 -mt-20 blur-3xl opacity-30 pointer-events-none" />
+          <div className="flex items-center justify-between relative z-10">
+            <div className="space-y-1">
+              <span className="bg-emerald-400/20 text-emerald-300 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-400/30">
+                New AI Feature
+              </span>
+              <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2 mt-2">
+                Crop Disease Scanner & RAG Doctor
+              </h3>
+              <p className="text-emerald-100/80 text-xs font-medium max-w-sm">
+                Upload a leaf photo to diagnose pests, blights & receive scientific cures instantly.
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 group-hover:bg-white group-hover:text-emerald-800 transition-all shrink-0 ml-4">
+              <Stethoscope size={24} />
+            </div>
+          </div>
+        </div>
+
         {/* Banner */}
         <div className="bg-black rounded-[40px] p-8 text-white mb-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-500 rounded-full -mr-32 -mt-32 blur-[80px] opacity-40" />

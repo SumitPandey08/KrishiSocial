@@ -4,12 +4,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
     "@google/earthengine": "^1.7.17",
-    "@langchain/openai": "^1.2.12",
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/google-genai": "^2.1.30",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",

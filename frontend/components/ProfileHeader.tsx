@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LogOut, Grid, HelpCircle, MapPin, LandPlot, Sprout } from 'lucide-react';
+import { LogOut, Grid, HelpCircle, MapPin, LandPlot, Sprout, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createChat } from '@/services/chatService';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -38,13 +40,31 @@ export default function ProfileHeader({
   activeTab = 'posts',
   onTabChange,
 }: ProfileProps) {
+  const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(data.isFollowing || false);
   const [followersCount, setFollowersCount] = useState(data.followersCount || 0);
+  const [isMessaging, setIsMessaging] = useState(false);
 
   const handleFollowToggle = () => {
     const newStatus = !isFollowing;
     setIsFollowing(newStatus);
     setFollowersCount(prev => newStatus ? prev + 1 : Math.max(0, prev - 1));
+  };
+
+  const handleMessage = async () => {
+    setIsMessaging(true);
+    try {
+      const chat = await createChat({
+        chatType: 'personal',
+        participants: [data._id]
+      });
+      router.push(`/charcha/${chat._id}`);
+    } catch (error) {
+      console.error("Failed to start chat:", error);
+      alert("Failed to start conversation. Please try again.");
+    } finally {
+      setIsMessaging(false);
+    }
   };
 
   return (
@@ -109,8 +129,12 @@ export default function ProfileHeader({
             >
               {isFollowing ? 'Following' : 'Follow'}
             </button>
-            <button className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95">
-              Message
+            <button 
+              onClick={handleMessage}
+              disabled={isMessaging}
+              className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95 flex items-center justify-center gap-2"
+            >
+              {isMessaging ? <Loader2 size={18} className="animate-spin" /> : 'Message'}
             </button>
           </>
         )}

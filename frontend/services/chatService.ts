@@ -10,6 +10,11 @@ export const getUserChats = async () => {
   return response.data;
 };
 
+export const getChatById = async (chatId: string) => {
+  const response = await api.get(`/chats/${chatId}`);
+  return response.data;
+};
+
 export const addParticipant = async (chatId: string, userId: string) => {
   const response = await api.put(`/chats/${chatId}/add`, { userId });
   return response.data;

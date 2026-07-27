@@ -6,7 +6,7 @@ import Posts from '@/components/Posts';
 import AppLayout from '@/components/AppLayout';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { MapPin, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronRight, Sparkles, Stethoscope } from 'lucide-react';
 import { getWeather } from '@/services/farmerService';
 import Link from 'next/link';
 
@@ -91,6 +91,28 @@ function HomeContent() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* AI Crop Doctor Banner */}
+      <div className="px-4 pt-2 pb-2">
+        <Link 
+          href="/disease-detector"
+          className="block bg-gradient-to-r from-emerald-950 via-green-900 to-slate-900 rounded-[28px] p-5 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden group hover:scale-[1.01] transition-all border border-emerald-500/20"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-center justify-between relative z-10">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider border border-emerald-400/30">
+                <Sparkles size={12} className="animate-pulse" /> RAG Doctor
+              </div>
+              <h4 className="text-base font-black text-white tracking-tight">AI Crop Disease Doctor</h4>
+              <p className="text-[11px] text-emerald-100/70 font-medium">Scan leaf photos for instant diagnosis & scientific cures</p>
+            </div>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform shrink-0 ml-3">
+              <Stethoscope size={20} />
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Filter Bar - Instagram Style Pills */}

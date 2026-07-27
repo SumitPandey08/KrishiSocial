@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CloudRain, Droplets, ArrowRight, MapPin } from 'lucide-react';
+import { CloudRain, Droplets, ArrowRight, MapPin, CloudSun } from 'lucide-react';
 import Link from 'next/link';
 import { getWeather } from '@/services/farmerService';
 
@@ -29,7 +29,7 @@ export default function WeatherCard() {
         } finally {
           setLoading(false);
         }
-      }, (error) => {
+      }, () => {
         setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
         setLoading(false);
       });
@@ -40,8 +40,8 @@ export default function WeatherCard() {
 
   if (loading && !weather) {
     return (
-      <div className="w-full h-[280px] bg-[#2E7D32] rounded-[32px] p-6 text-white animate-pulse flex items-center justify-center">
-        <span className="text-xs font-black opacity-50 uppercase tracking-widest">Loading...</span>
+      <div className="w-full h-[240px] bg-emerald-900 rounded-3xl p-6 text-white animate-pulse flex items-center justify-center">
+        <span className="text-xs font-black opacity-50 uppercase tracking-widest">Loading Weather...</span>
       </div>
     );
   }
@@ -49,55 +49,50 @@ export default function WeatherCard() {
   const displayWeather = weather || { temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" };
 
   return (
-    <div className="w-full min-h-[280px] bg-gradient-to-br from-[#2E7D32] to-[#43A047] rounded-[32px] p-6 text-white shadow-xl shadow-green-900/10 relative overflow-hidden group border border-white/10 flex flex-col justify-between">
-      {/* Decorative Elements */}
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
-      
-      <div className="relative z-10 flex flex-col h-full">
+    <div className="w-full bg-gradient-to-br from-emerald-900 via-green-800 to-slate-900 rounded-3xl p-5 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden group border border-emerald-500/20 flex flex-col justify-between">
+      {/* Decorative Blur */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
+
+      <div className="relative z-10 space-y-4">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1 min-w-0 pr-2">
-            <p className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1">Today's Weather</p>
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest flex items-center gap-1">
+              <CloudSun size={12} /> Today's Forecast
+            </span>
             <div className="flex items-baseline gap-1">
-              <h3 className="text-4xl lg:text-5xl font-black tracking-tighter leading-none">{displayWeather.temp}</h3>
-              <span className="text-xl font-black">°C</span>
+              <h3 className="text-4xl font-black tracking-tighter text-white">{displayWeather.temp}</h3>
+              <span className="text-lg font-black text-emerald-300">°C</span>
             </div>
-            <div className="flex items-center gap-1.5 mt-2 opacity-90">
-              <MapPin size={12} className="flex-shrink-0" />
-              <p className="text-xs font-bold uppercase truncate">{displayWeather.location}</p>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-100/80">
+              <MapPin size={12} /> {displayWeather.location}
             </div>
           </div>
-          <div className="relative flex-shrink-0 -mt-2 -mr-2">
+
+          <div className="shrink-0 -mt-2 -mr-2">
             <img 
               src={`https://openweathermap.org/img/wn/${displayWeather.icon}@2x.png`} 
               alt="weather"
-              className="w-16 h-16 lg:w-20 lg:h-20 drop-shadow-2xl relative z-10"
+              className="w-16 h-16 drop-shadow-md"
             />
-            <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full" />
           </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-2 mt-auto">
-          <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-md border border-white/5 flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-1.5 mb-1 opacity-70">
-              <Droplets size={12} className="text-blue-200" />
-              <span className="text-[8px] font-black uppercase tracking-tighter">Humidity</span>
-            </div>
-            <p className="text-base font-black">{displayWeather.humidity}%</p>
+        {/* Info Metrics */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-center">
+            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-200 block mb-0.5">Humidity</span>
+            <span className="text-sm font-black text-white">{displayWeather.humidity}%</span>
           </div>
-          <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-md border border-white/5 flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-1.5 mb-1 opacity-70">
-              <CloudRain size={12} className="text-blue-200" />
-              <span className="text-[8px] font-black uppercase tracking-tighter">Rain Chance</span>
-            </div>
-            <p className="text-base font-black">{displayWeather.rainChance}%</p>
+          <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-center">
+            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-200 block mb-0.5">Rain Chance</span>
+            <span className="text-sm font-black text-white">{displayWeather.rainChance}%</span>
           </div>
         </div>
 
         {/* Link Button */}
-        <Link href="/weather" className="mt-4 flex items-center justify-between bg-white hover:bg-white/90 px-4 py-3 rounded-2xl transition-all text-[#2E7D32] group/btn shadow-lg shadow-green-900/20 active:scale-95">
-          <span className="text-[10px] font-black uppercase tracking-widest">Full Forecast</span>
+        <Link href="/weather" className="flex items-center justify-between bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-xl transition-all text-white text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/10 group/btn active:scale-95">
+          <span>Full Forecast & Spray Advisory</span>
           <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
         </Link>
       </div>

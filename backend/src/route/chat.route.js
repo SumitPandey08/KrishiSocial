@@ -2,6 +2,7 @@ import express from "express";
 import {
   createChat,
   getUserChats,
+  getChatById,
   addParticipant,
   removeParticipant,
   deleteChat,
@@ -16,6 +17,7 @@ router.use(protect);
 
 router.post("/", createChat);
 router.get("/", getUserChats);
+router.get("/:chatId", getChatById);
 router.put("/:chatId/add", addParticipant);
 router.put("/:chatId/remove", removeParticipant);
 router.delete("/:chatId", deleteChat);

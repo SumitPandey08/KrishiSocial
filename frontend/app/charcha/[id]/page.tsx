@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { getCommunity } from '@/services/communityService';
-import { createChat, getChatMessages } from '@/services/chatService';
+import { createChat, getChatMessages, getChatById } from '@/services/chatService';
 import { sendMessage } from '@/services/messageService';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
@@ -34,13 +34,12 @@ interface Message {
   createdAt: string;
 }
 
-export default function CommunityChatPage() {
+export default function ChatPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
   
-  const [community, setCommunity] = useState<any>(null);
   const [chat, setChat] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,23 +81,38 @@ export default function CommunityChatPage() {
 
   const fetchData = async () => {
     try {
-      const communityData = await getCommunity(id as string);
-      setCommunity(communityData);
+      setLoading(true);
+      let currentChat = null;
 
-      // Get or create chat for this community
-      const chatData = await createChat({
-        chatName: communityData.name,
-        chatType: 'community',
-        communityId: communityData._id,
-        participants: [] // Backend handles adding the current user
-      });
-      setChat(chatData);
+      // 1. Try to fetch as a direct chat ID
+      try {
+        currentChat = await getChatById(id as string);
+      } catch (error) {
+        console.log("Not a chat ID, trying as community ID...");
+      }
 
-      // Fetch existing messages
-      const messagesData = await getChatMessages(chatData._id);
-      setMessages(messagesData.reverse()); // Backend sends desc, we want asc for display
+      // 2. If not found, try to fetch as a community ID and get/create its chat
+      if (!currentChat) {
+        try {
+          const communityData = await getCommunity(id as string);
+          currentChat = await createChat({
+            chatName: communityData.name,
+            chatType: 'community',
+            communityId: communityData._id,
+            participants: []
+          });
+        } catch (error) {
+          console.error("Failed to fetch community/chat data:", error);
+        }
+      }
+
+      if (currentChat) {
+        setChat(currentChat);
+        const messagesData = await getChatMessages(currentChat._id);
+        setMessages(messagesData.reverse());
+      }
     } catch (error) {
-      console.error("Failed to fetch chat data:", error);
+      console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
@@ -110,7 +124,6 @@ export default function CommunityChatPage() {
 
     setSending(true);
     try {
-      // We emit via socket for real-time
       if (socket) {
         socket.emit(EVENTS.NEW_MESSAGE, {
           chatId: chat._id,
@@ -119,7 +132,6 @@ export default function CommunityChatPage() {
         });
         setMessageText('');
       } else {
-        // Fallback to API if socket not connected
         const newMessage = await sendMessage({
           chatId: chat._id,
           content: messageText,
@@ -145,6 +157,35 @@ export default function CommunityChatPage() {
     );
   }
 
+  if (!chat) {
+    return (
+        <AppLayout>
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <p className="text-gray-500 font-bold mb-4">Chat not found or you don't have access.</p>
+            <button 
+                onClick={() => router.back()}
+                className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold"
+            >
+                Go Back
+            </button>
+          </div>
+        </AppLayout>
+    );
+  }
+
+  const isCommunity = chat.chatType === 'community';
+  const otherParticipant = chat.chatType === 'personal' 
+    ? chat.participants.find((p: any) => p._id !== user?.id) 
+    : null;
+  
+  const chatTitle = isCommunity 
+    ? chat.communityId?.name || chat.chatName 
+    : otherParticipant?.name || 'Personal Chat';
+    
+  const chatAvatar = isCommunity 
+    ? chat.communityId?.avatar 
+    : otherParticipant?.profilePicture;
+
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto bg-white min-h-[calc(100vh-64px)] flex flex-col shadow-sm border-x border-gray-100">
@@ -155,19 +196,21 @@ export default function CommunityChatPage() {
               <ArrowLeft size={24} />
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 font-bold">
-                {community?.avatar ? (
-                  <Image src={community.avatar} alt={community.name} width={48} height={48} className="rounded-2xl" />
-                ) : (
+              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 font-bold overflow-hidden">
+                {chatAvatar ? (
+                  <Image src={chatAvatar} alt={chatTitle} width={48} height={48} className="w-full h-full object-cover" />
+                ) : isCommunity ? (
                   <Users size={24} />
+                ) : (
+                  <UserIcon size={24} />
                 )}
               </div>
               <div>
-                <h1 className="font-black text-gray-900">{community?.name}</h1>
+                <h1 className="font-black text-gray-900">{chatTitle}</h1>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <p className="text-xs font-bold text-gray-400">
-                    {isConnected ? 'Live Discussion' : 'Connecting...'}
+                    {isConnected ? (isCommunity ? 'Live Discussion' : 'Online') : 'Connecting...'}
                   </p>
                 </div>
               </div>
@@ -179,17 +222,17 @@ export default function CommunityChatPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
           {messages.map((msg, index) => {
             const isOwnMessage = msg.sender._id === user?.id;
-            const showSender = index === 0 || messages[index - 1].sender._id !== msg.sender._id;
+            const showSender = !isOwnMessage && (index === 0 || messages[index - 1].sender._id !== msg.sender._id);
 
             return (
               <div key={msg._id} className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                {!isOwnMessage && showSender && (
+                {showSender && isCommunity && (
                   <span className="text-[10px] font-black text-gray-400 mb-1 ml-11 uppercase tracking-widest">
                     {msg.sender.name}
                   </span>
                 )}
                 <div className={`flex items-end gap-2 max-w-[80%] ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {!isOwnMessage && (
+                  {!isOwnMessage && isCommunity && (
                     <div className="w-8 h-8 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0 mb-1">
                       {msg.sender.profilePicture ? (
                         <Image src={msg.sender.profilePicture} alt={msg.sender.name} width={32} height={32} />

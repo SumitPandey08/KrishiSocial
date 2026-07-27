@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { usePosts } from '@/context/PostContext';
-import { useUser } from '@/context/AuthContext';
 import { 
   MoreHorizontal, 
   Heart, 
@@ -13,7 +12,8 @@ import {
   ArrowBigDown,
   HelpCircle,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { clsx, type ClassValue } from 'clsx';
@@ -76,187 +76,173 @@ export default function PostCard({
 
   return (
     <div className={cn(
-      "group bg-white mb-4 rounded-3xl overflow-hidden border border-gray-100 transition-all hover:border-gray-200 hover:shadow-xl hover:shadow-gray-100/50 w-full",
-      isQuestion && "bg-[#F9FEF9] border-l-4 border-l-[#2E7D32]"
+      "group bg-white mb-4 rounded-3xl overflow-hidden border border-slate-200/70 shadow-xs hover:shadow-xl hover:border-emerald-200/80 transition-all duration-300 w-full",
+      isQuestion && "bg-gradient-to-br from-emerald-50/40 via-white to-teal-50/30 border-l-4 border-l-emerald-600"
     )}>
       <div className="flex">
         {/* Voting Sidebar - Desktop Only */}
-        <div className="hidden md:flex flex-col items-center gap-1 p-3 bg-gray-50/50 border-r border-gray-50/50 w-14">
-            <button 
-                onClick={(e) => handleVote(e, 'upvote')}
-                className={cn(
-                    "p-1.5 rounded-xl transition-all active:scale-90",
-                    userVote === 'upvote' ? "text-orange-600 bg-orange-50" : "text-gray-400 hover:bg-gray-100"
-                )}
-            >
-                <ArrowBigUp size={28} className={userVote === 'upvote' ? "fill-current" : ""} />
-            </button>
-            <span className={cn(
-                "text-xs font-black py-0.5",
-                userVote === 'upvote' ? "text-orange-600" : userVote === 'downvote' ? "text-indigo-600" : "text-gray-700"
-            )}>
-                {votesScore}
-            </span>
-            <button 
-                onClick={(e) => handleVote(e, 'downvote')}
-                className={cn(
-                    "p-1.5 rounded-xl transition-all active:scale-90",
-                    userVote === 'downvote' ? "text-indigo-600 bg-indigo-50" : "text-gray-400 hover:bg-gray-100"
-                )}
-            >
-                <ArrowBigDown size={28} className={userVote === 'downvote' ? "fill-current" : ""} />
-            </button>
+        <div className="hidden md:flex flex-col items-center gap-1.5 p-3 bg-slate-50/70 border-r border-slate-100 w-14">
+          <button 
+            onClick={(e) => handleVote(e, 'upvote')}
+            className={cn(
+              "p-1.5 rounded-xl transition-all active:scale-90 hover:bg-emerald-100/60 text-slate-400",
+              userVote === 'upvote' && "text-emerald-600 bg-emerald-100"
+            )}
+          >
+            <ArrowBigUp size={26} className={userVote === 'upvote' ? "fill-current text-emerald-600" : ""} />
+          </button>
+          <span className={cn(
+            "text-xs font-black py-0.5",
+            userVote === 'upvote' ? "text-emerald-600" : userVote === 'downvote' ? "text-rose-600" : "text-slate-700"
+          )}>
+            {votesScore}
+          </span>
+          <button 
+            onClick={(e) => handleVote(e, 'downvote')}
+            className={cn(
+              "p-1.5 rounded-xl transition-all active:scale-90 hover:bg-rose-100/60 text-slate-400",
+              userVote === 'downvote' && "text-rose-600 bg-rose-100"
+            )}
+          >
+            <ArrowBigDown size={26} className={userVote === 'downvote' ? "fill-current text-rose-600" : ""} />
+          </button>
         </div>
 
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex items-center justify-between p-4">
-            <Link href={`/profile/${user.username}`} className="flex items-center gap-3 group/author">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white ring-2 ring-gray-100 shadow-sm transition-transform group-hover/author:scale-105">
-                    <img 
-                    src={user.profilePhoto || "https://via.placeholder.com/150"} 
+          <div className="flex items-center justify-between p-4 pb-3">
+            <Link href={`/profile/${user.username}`} className="flex items-center gap-3 group/author min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white ring-2 ring-emerald-100 shadow-xs transition-transform group-hover/author:scale-105">
+                  <img 
+                    src={user.profilePhoto || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80"} 
                     alt={user.username}
                     className="object-cover w-full h-full"
-                    />
+                  />
                 </div>
                 {isExpert && (
-                    <div className="absolute -bottom-0.5 -right-0.5 bg-[#2E7D32] text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                        <CheckCircle2 size={10} fill="currentColor" className="text-white" />
-                    </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 bg-emerald-600 text-white rounded-full p-0.5 border-2 border-white shadow-xs">
+                    <CheckCircle2 size={10} fill="currentColor" className="text-white" />
+                  </div>
                 )}
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm text-gray-900 group-hover/author:underline">{user.name}</span>
+                  <span className="font-black text-sm text-slate-900 truncate group-hover/author:text-emerald-700">{user.name}</span>
                   {isExpert && (
-                    <span className="bg-[#E8F5E9] text-[#2E7D32] text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest">Expert</span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                      Expert
+                    </span>
                   )}
                   {isQuestion && !isExpert && (
-                    <span className="bg-orange-50 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest">Query</span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                      Question
+                    </span>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-400 font-medium">{uploadedAt} • Nearby</span>
+                <span className="text-[11px] text-slate-400 font-semibold truncate">@{user.username} • {uploadedAt}</span>
               </div>
             </Link>
-            <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
-              <MoreHorizontal size={20} />
+
+            <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+              <MoreHorizontal size={18} />
             </button>
           </div>
 
           {/* Content */}
           <Link href={`/post/${postId}`} className="block">
             {isQuestion ? (
-                <div className="px-4 pb-4">
-                   <div className="flex items-start gap-3 bg-white/50 p-4 rounded-2xl border border-gray-100/50 mb-3 group-hover:bg-white transition-colors">
-                      <div className="bg-orange-100 p-2 rounded-xl flex-shrink-0 text-orange-600">
-                         <HelpCircle size={20} />
-                      </div>
-                      <p className="text-base font-bold text-gray-900 leading-snug">
-                        {caption}
-                      </p>
-                   </div>
-                   {postImage && (
-                    <div className="relative w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 group-hover:shadow-lg group-hover:shadow-gray-200/50 transition-all duration-500">
-                        <img src={postImage} alt="question" className="w-full h-auto max-h-[400px] object-cover" />
-                        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
-                    </div>
-                   )}
-                </div>
-            ) : (
-                <div className="pb-4">
-                  <div className="px-4 mb-4">
-                    <p className="text-[15px] text-gray-800 leading-relaxed">
-                        {caption}
-                    </p>
+              <div className="px-4 pb-3">
+                <div className="flex items-start gap-3 bg-white p-4 rounded-2xl border border-emerald-100/80 mb-3 shadow-xs">
+                  <div className="bg-emerald-100 text-emerald-700 p-2 rounded-xl shrink-0">
+                    <HelpCircle size={20} />
                   </div>
-                  {postImage && (
-                    <div className="relative aspect-auto w-full max-h-[600px] overflow-hidden bg-gray-50 group-hover:brightness-105 transition-all duration-500">
-                        <img src={postImage} alt="post" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
-                    </div>
-                  )}
+                  <p className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                    {caption}
+                  </p>
                 </div>
+                {postImage && (
+                  <div className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/60 max-h-[420px]">
+                    <img src={postImage} alt="Question media" className="w-full h-auto max-h-[420px] object-cover" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="pb-3">
+                <div className="px-4 mb-3">
+                  <p className="text-sm sm:text-[15px] font-medium text-slate-800 leading-relaxed">
+                    {caption}
+                  </p>
+                </div>
+                {postImage && (
+                  <div className="relative w-full max-h-[500px] overflow-hidden bg-slate-900">
+                    <img src={postImage} alt="Post media" className="w-full h-full max-h-[500px] object-cover" />
+                  </div>
+                )}
+              </div>
             )}
           </Link>
 
           {/* Action Bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50 bg-gray-50/30">
-            <div className="flex items-center gap-2 md:gap-6">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex items-center gap-3 sm:gap-6">
               {/* Mobile Vote Controls */}
-              <div className="flex md:hidden items-center bg-white rounded-full border border-gray-100 p-0.5 shadow-sm">
-                 <button 
-                    onClick={(e) => handleVote(e, 'upvote')}
-                    className={cn(
-                        "p-1 rounded-full transition-colors",
-                        userVote === 'upvote' ? "text-orange-600 bg-orange-50" : "text-gray-400"
-                    )}
-                 >
-                    <ArrowBigUp size={22} className={userVote === 'upvote' ? "fill-current" : ""} />
-                 </button>
-                 <span className="text-[10px] font-black px-1 min-w-[20px] text-center">{votesScore}</span>
-                 <button 
-                    onClick={(e) => handleVote(e, 'downvote')}
-                    className={cn(
-                        "p-1 rounded-full transition-colors",
-                        userVote === 'downvote' ? "text-indigo-600 bg-indigo-50" : "text-gray-400"
-                    )}
-                 >
-                    <ArrowBigDown size={22} className={userVote === 'downvote' ? "fill-current" : ""} />
-                 </button>
+              <div className="flex md:hidden items-center bg-white rounded-full border border-slate-200/80 px-2 py-0.5 shadow-xs">
+                <button 
+                  onClick={(e) => handleVote(e, 'upvote')}
+                  className={cn("p-1 text-slate-400", userVote === 'upvote' && "text-emerald-600")}
+                >
+                  <ArrowBigUp size={20} className={userVote === 'upvote' ? "fill-current" : ""} />
+                </button>
+                <span className="text-[11px] font-black px-1.5 text-slate-800">{votesScore}</span>
+                <button 
+                  onClick={(e) => handleVote(e, 'downvote')}
+                  className={cn("p-1 text-slate-400", userVote === 'downvote' && "text-rose-600")}
+                >
+                  <ArrowBigDown size={20} className={userVote === 'downvote' ? "fill-current" : ""} />
+                </button>
               </div>
 
               <button 
                 onClick={handleLike} 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white hover:shadow-sm transition-all active:scale-110"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-rose-50 transition-all active:scale-95 text-slate-600 hover:text-rose-600"
               >
                 <Heart 
-                  size={20} 
+                  size={18} 
                   className={cn(
                     "transition-all",
-                    isLiked ? "fill-[#FF3040] text-[#FF3040] scale-110" : "text-gray-600",
+                    isLiked ? "fill-rose-500 text-rose-500 scale-110" : "",
                     isAnimatingLike && "animate-ping"
                   )} 
                 />
-                <span className="text-xs font-black text-gray-500">{likes}</span>
+                <span className="text-xs font-black">{likes}</span>
               </button>
 
               <Link 
                 href={`/post/${postId}`} 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white hover:shadow-sm transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-all text-slate-600"
               >
-                <MessageCircle size={20} className="text-gray-600" />
-                <span className="text-xs font-black text-gray-500">{commentsCount}</span>
+                <MessageCircle size={18} />
+                <span className="text-xs font-black">{commentsCount}</span>
               </Link>
 
-              <button className="p-2 hover:bg-white hover:shadow-sm rounded-full transition-all">
-                <Share2 size={20} className="text-gray-600" />
+              <button className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-600">
+                <Share2 size={18} />
               </button>
             </div>
             
             <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-white hover:shadow-sm rounded-full transition-all">
-                    <Bookmark size={20} className="text-gray-600" />
-                </button>
-                <Link 
-                    href={`/post/${postId}`}
-                    className="hidden md:flex items-center gap-1.5 text-[10px] font-black text-[#2E7D32] uppercase tracking-wider bg-white px-3 py-1.5 rounded-full border border-gray-100 hover:bg-[#2E7D32] hover:text-white transition-all shadow-sm group/view"
-                >
-                    View Details
-                    <ExternalLink size={10} className="group-hover/view:translate-x-0.5 transition-transform" />
-                </Link>
+              <button className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-600">
+                <Bookmark size={18} />
+              </button>
+              <Link 
+                href={`/post/${postId}`}
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 uppercase tracking-wider bg-emerald-50 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-full border border-emerald-200/60 transition-all shadow-xs"
+              >
+                View <ExternalLink size={10} />
+              </Link>
             </div>
           </div>
-
-          {/* Preview Footer */}
-          {commentsCount > 0 && (
-            <div className="px-4 py-3 bg-gray-50/20">
-               <Link href={`/post/${postId}`} className="text-xs font-bold text-gray-400 hover:text-[#2E7D32] transition-colors flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-gray-300" />
-                  Show all {commentsCount} {isQuestion ? 'answers' : 'comments'}
-               </Link>
-            </div>
-          )}
         </div>
       </div>
     </div>

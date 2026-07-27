@@ -44,7 +44,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 max-w-[700px] 2xl:max-w-[800px] border-x border-gray-100 bg-white min-h-screen relative shadow-sm flex flex-col">
         <div className="md:hidden">
-          {pathname !== '/weather' && <Header />}
+          <Header />
         </div>
         <main className="flex-1 pb-24 md:pb-0">{children}</main>
         <div className="md:hidden">

@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/database.js";
 
+dotenv.config();
 
 // Routes
 import authRoutes from "./route/auth.route.js";
@@ -22,8 +23,6 @@ import { initSocket } from "./config/socket.js";
 import { loadDataset } from "./services/datasetLoader.js";
 
 await loadDataset();
-
-dotenv.config();
 
 // Connect to Database
 connectDB();

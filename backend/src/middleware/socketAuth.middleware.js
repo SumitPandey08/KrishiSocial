@@ -8,7 +8,11 @@ import jwt from "jsonwebtoken";
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = { id: decoded.id };
+    socket.user = { 
+      id: decoded.id,
+      username: decoded.username,
+      name: decoded.name
+    };
     next();
   } catch (error) {
     return next(new Error("Authentication error: Invalid token"));

@@ -223,3 +223,28 @@ export const exitChat = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getChatById = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    const chat = await Chat.findById(chatId)
+      .populate("participants", "username name profilePicture")
+      .populate("latestMessage")
+      .populate("groupAdmin", "username name")
+      .populate("communityId", "name avatar description");
+
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (!chat.participants.some(p => p._id.toString() === req.user.id)) {
+      return res.status(403).json({ message: "You are not a participant of this chat" });
+    }
+
+    res.json(chat);
+  } catch (error) {
+    console.error("Error fetching chat details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

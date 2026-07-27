@@ -62,3 +62,20 @@ export const getAdvancedCropRecommendation = async (params: {
     throw error;
   }
 };
+
+export const detectCropDisease = async (imageFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+
+    const response = await api.post("/agent/detect-disease", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Detect crop disease error:", error);
+    throw error;
+  }
+};

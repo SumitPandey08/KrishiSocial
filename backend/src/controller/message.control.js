@@ -5,7 +5,7 @@ import Chat from "../model/chat.model.js";
 export const sendMessageLogic = async ({ userId, chatId, content, messageType, mediaUrl }) => {
   const chat = await Chat.findById(chatId);
   if (!chat) throw new Error("Chat not found");
-  if (!chat.participants.includes(userId)) throw new Error("Unauthorized");
+  if (!chat.participants.some(p => p.toString() === userId.toString())) throw new Error("Unauthorized");
 
   const message = new Message({
     sender: userId,
