@@ -16,6 +16,7 @@ import communityRoutes from "./route/community.route.js";
 import adminRoutes from "./route/admin.route.js";
 import chatRoutes from "./route/chat.route.js";
 import messageRoutes from "./route/message.route.js";
+import callRoutes from "./route/call.route.js";
 
 // Socket
 import { initSocket } from "./config/socket.js";
@@ -52,6 +53,7 @@ app.use("/api/communities", communityRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/calls", callRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

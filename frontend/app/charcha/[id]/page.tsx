@@ -9,16 +9,17 @@ import { sendMessage } from '@/services/messageService';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
 import { EVENTS } from '@/utils/event.constants';
-import { 
-  Send, 
-  ArrowLeft, 
-  Users, 
-  Loader2, 
-  Image as ImageIcon, 
+import {
+  Send,
+  ArrowLeft,
+  Users,
+  Loader2,
+  Image as ImageIcon,
   Paperclip,
   User as UserIcon
 } from 'lucide-react';
 import Image from 'next/image';
+
 
 interface Message {
   _id: string;
@@ -39,13 +40,13 @@ export default function ChatPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
-  
+
   const [chat, setChat] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -159,31 +160,31 @@ export default function ChatPage() {
 
   if (!chat) {
     return (
-        <AppLayout>
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <p className="text-gray-500 font-bold mb-4">Chat not found or you don't have access.</p>
-            <button 
-                onClick={() => router.back()}
-                className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold"
-            >
-                Go Back
-            </button>
-          </div>
-        </AppLayout>
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <p className="text-gray-500 font-bold mb-4">Chat not found or you don't have access.</p>
+          <button
+            onClick={() => router.back()}
+            className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold"
+          >
+            Go Back
+          </button>
+        </div>
+      </AppLayout>
     );
   }
 
   const isCommunity = chat.chatType === 'community';
-  const otherParticipant = chat.chatType === 'personal' 
-    ? chat.participants.find((p: any) => p._id !== user?.id) 
+  const otherParticipant = chat.chatType === 'personal'
+    ? chat.participants.find((p: any) => p._id !== user?.id)
     : null;
-  
-  const chatTitle = isCommunity 
-    ? chat.communityId?.name || chat.chatName 
+
+  const chatTitle = isCommunity
+    ? chat.communityId?.name || chat.chatName
     : otherParticipant?.name || 'Personal Chat';
-    
-  const chatAvatar = isCommunity 
-    ? chat.communityId?.avatar 
+
+  const chatAvatar = isCommunity
+    ? chat.communityId?.avatar
     : otherParticipant?.profilePicture;
 
   return (
@@ -214,6 +215,15 @@ export default function ChatPage() {
                   </p>
                 </div>
               </div>
+              {/* add call button for personal chats */}
+              {chat.chatType === 'personal' && (
+                <button
+                  onClick={() => router.push(`/charcha/${id}/call/${chat._id}`)}
+                  className="absolute bottom-7 right-5 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-all"
+                >
+                  <Users size={22} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -241,13 +251,14 @@ export default function ChatPage() {
                           <UserIcon size={16} />
                         </div>
                       )}
+
                     </div>
+
                   )}
-                  <div className={`px-4 py-3 rounded-[24px] font-bold text-sm shadow-sm ${
-                    isOwnMessage 
-                    ? 'bg-green-500 text-white rounded-tr-none shadow-green-100' 
-                    : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
-                  }`}>
+                  <div className={`px-4 py-3 rounded-[24px] font-bold text-sm shadow-sm ${isOwnMessage
+                      ? 'bg-green-500 text-white rounded-tr-none shadow-green-100'
+                      : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                    }`}>
                     {msg.content}
                     <div className={`text-[9px] mt-1 font-bold ${isOwnMessage ? 'text-green-100' : 'text-gray-300'}`}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -267,14 +278,14 @@ export default function ChatPage() {
               <ImageIcon size={20} />
             </button>
             <div className="flex-1 relative">
-              <input 
+              <input
                 type="text"
                 placeholder="Type your message..."
                 className="w-full pl-6 pr-12 py-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
               />
-              <button 
+              <button
                 type="submit"
                 disabled={!messageText.trim() || sending}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center hover:bg-green-600 transition-all disabled:opacity-50 shadow-lg shadow-green-100"

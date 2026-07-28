@@ -10,8 +10,16 @@ export const EVENTS = {
   JOIN_CHAT: "joinChat",
   LEAVE_CHAT: "leaveChat",
   NEW_MESSAGE: "newMessage",
-  DELETE_MESSAGE: "deleteMessage",  
+  DELETE_MESSAGE: "deleteMessage",
   EDIT_MESSAGE: "editMessage",
+
+  //calls
+  INITIATE_CALL: "initiateCall",
+  CALL_INITIATED: "callInitiated",
+  TOGGLE_PARTICIPATE: "toggleParticipate",
+  CALL_STATUS_UPDATED: "callStatusUpdated",
+  USER_REGISTERED: "userRegistered",
+
 
   //notifications
   NOTIFICATION_RECEIVED: "notificationReceived",
