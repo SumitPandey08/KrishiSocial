@@ -90,6 +90,7 @@ export const toggleParticipateLogic = async (callId, userId, action) => {
 
 export const toggleParticipate = async (req, res) => {
     try {
+        //accept, decline, end
         const { callId, userId, action } = req.body;
         const result = await toggleParticipateLogic(callId, userId, action);
         res.json(result);
@@ -115,3 +116,24 @@ export const getCallHistory = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const getCallDetails = async (req, res) => {
+    try {
+        const { callId } = req.params;
+
+        const call = await Call.findById(callId)
+            .populate("initiator", "name email")
+            .populate("participants", "name email")
+            .populate("chatId", "chatType");
+
+        if (!call) {
+            return res.status(404).json({ message: "Call not found" });
+        }
+
+        res.json(call);
+    } catch (error) {
+        console.error("Error fetching call details:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};   
+

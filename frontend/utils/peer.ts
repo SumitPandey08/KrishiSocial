@@ -1,2 +1,3 @@
 import { Peer } from "peerjs";
-import { EVENT } from "./event.constants";
+import { EVENTS } from "./event.constants";
+

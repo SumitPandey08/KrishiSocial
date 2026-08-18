@@ -19,6 +19,8 @@ import {
   User as UserIcon
 } from 'lucide-react';
 import Image from 'next/image';
+import { usePeer } from '@/hooks/usePeer';
+import RingOrCalling from '@/components/call/RingOrCalling';
 
 
 interface Message {
@@ -51,7 +53,63 @@ export default function ChatPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
   };
+
+  //call initiation that will give us callId and remotePeerId
+  const { peerId } = usePeer(id as string, socket);
+  const [remotePeerId, setRemotePeerId] = useState('');
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [callId, setCallId] = useState('');
+  const [isInitiator, setIsInitiator] = useState(false);
+  const [isReceivingCall, setIsReceivingCall] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState<any>(null);
+
+  // logic for call button click to initiate call
+  const handleCallButtonClick = () => {
+    if (!socket || !peerId || !chat?._id || !user?.id) return;
+
+    const payload = {
+      initiatorId: user.id,
+      chatId: chat._id,
+      callType: 'audio'
+    };
+
+    socket.emit(EVENTS.INITIATE_CALL, payload);
+    setCallId(chat._id);
+    setIncomingCallData(null);
+    setIsInitiator(true);
+    setIsReceivingCall(false);
+    setIsCallActive(true);
+    console.log('Call initiated with payload:', payload, 'peerId:', peerId);
+  };
+
+  // logic for receiving call
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingCall = (payload: any) => {
+      const incomingCallId = payload?.call?._id || payload?.call?.id || payload?.callId || '';
+      const incomingRemotePeerId = payload?.remotePeerId || '';
+
+      setRemotePeerId(incomingRemotePeerId);
+      setCallId(incomingCallId);
+      setIsInitiator(false);
+      setIsReceivingCall(true);
+      setIsCallActive(false);
+      setIncomingCallData({ remotePeerId: incomingRemotePeerId, callId: incomingCallId, call: payload?.call });
+      console.log('Incoming call received:', payload);
+    };
+
+    socket.on(EVENTS.CALL_INITIATED, handleIncomingCall);
+
+    return () => {
+      socket.off(EVENTS.CALL_INITIATED, handleIncomingCall);
+    };
+  }, [socket, isConnected]);
+  
+
+
 
   useEffect(() => {
     if (id) {
@@ -187,8 +245,21 @@ export default function ChatPage() {
     ? chat.communityId?.avatar
     : otherParticipant?.profilePicture;
 
+  const shouldShowCallOverlay = isReceivingCall || isInitiator || isCallActive;
+
   return (
     <AppLayout>
+      {shouldShowCallOverlay && (
+        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="w-full max-w-md rounded-2xl border border-green-100 bg-white/95 shadow-2xl backdrop-blur-md pointer-events-auto">
+            <RingOrCalling
+              callId={incomingCallData?.callId || callId || chat._id}
+              userId={id as string}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto bg-white min-h-[calc(100vh-64px)] flex flex-col shadow-sm border-x border-gray-100">
         {/* Chat Header */}
         <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
@@ -218,7 +289,7 @@ export default function ChatPage() {
               {/* add call button for personal chats */}
               {chat.chatType === 'personal' && (
                 <button
-                  onClick={() => router.push(`/charcha/${id}/call/${chat._id}`)}
+                  onClick={() => handleCallButtonClick()}
                   className="absolute bottom-7 right-5 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-all"
                 >
                   <Users size={22} />

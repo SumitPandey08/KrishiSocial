@@ -22,6 +22,7 @@ import callRoutes from "./route/call.route.js";
 import { initSocket } from "./config/socket.js";
 
 import { loadDataset } from "./services/datasetLoader.js";
+import { startKeepAliveService } from "./services/keepAliveService.js";
 
 await loadDataset();
 
@@ -69,6 +70,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
+  startKeepAliveService();
 });
 
 initSocket(server);

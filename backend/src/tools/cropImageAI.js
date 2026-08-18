@@ -6,6 +6,58 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 
 
+const VISION_FALLBACK_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-3.7-flash",
+  "gemini-flash-latest"
+];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Executes Gemini content generation with multi-model fallback and exponential backoff retry.
+ */
+async function generateContentWithFallback(genAI, parts, maxRetriesPerModel = 2) {
+  let lastError = null;
+
+  for (const modelName of VISION_FALLBACK_MODELS) {
+    for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
+      try {
+        console.log(`[cropImageAI] Analyzing with model "${modelName}" (Attempt ${attempt}/${maxRetriesPerModel})...`);
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const result = await model.generateContent(parts);
+        const response = await result.response;
+        const text = response.text();
+        if (text && text.trim().length > 0) {
+          console.log(`[cropImageAI] Successfully analyzed image using model "${modelName}".`);
+          return text;
+        }
+      } catch (error) {
+        lastError = error;
+        const status = error.status || error.statusCode;
+        const isTemporary = status === 503 || status === 429 || status === 500 || status === 504 || 
+          (error.message && (error.message.includes("503") || error.message.includes("high demand") || error.message.includes("quota")));
+
+        console.warn(`[cropImageAI] Model "${modelName}" attempt ${attempt} failed: ${status || error.message}`);
+
+        if (attempt < maxRetriesPerModel && isTemporary) {
+          const waitTime = attempt * 1200;
+          console.log(`[cropImageAI] Retrying "${modelName}" in ${waitTime}ms...`);
+          await sleep(waitTime);
+        } else {
+          // Switch to next model in fallback list
+          break;
+        }
+      }
+    }
+  }
+
+  throw lastError || new Error("All Gemini vision models failed to respond.");
+}
+
 /**
  * Analyzes an image of a crop to detect health issues, diseases, or pests.
  * 
@@ -28,7 +80,6 @@ export const analyzeImage = async (imageBuffer, mimetype = "image/jpeg") => {
     const base64Image = imageBuffer.toString("base64");
     console.log(`Starting Gemini analysis of crop image (${mimetype})...`);
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     const prompt = `You are a world-class plant pathologist and agricultural AI vision expert.
 Analyze this crop image thoroughly for any plant health issues, diseases, pests, physiological disorders, or nutrient deficiencies.
@@ -46,7 +97,7 @@ Return ONLY a valid JSON object with the following strict keys:
 
 Do not include any markdown fences (like \`\`\`json). Output raw JSON text only.`;
 
-    const result = await model.generateContent([
+    const text = await generateContentWithFallback(genAI, [
       prompt,
       {
         inlineData: {
@@ -55,9 +106,6 @@ Do not include any markdown fences (like \`\`\`json). Output raw JSON text only.
         }
       }
     ]);
-
-    const response = await result.response;
-    const text = response.text();
     
     // Clean potential markdown or extra whitespace & extract JSON block safely
     const cleanedText = text.replace(/```json/gi, '').replace(/```/g, '').trim();

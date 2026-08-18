@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Socket } from "socket.io-client";
 import { EVENTS } from "@/utils/event.constants";
 
-export const usePeer = (userId: string, socket: Socket) => {
+export const usePeer = (userId: string, socket: Socket | null) => {
     const [peer, setPeer] = useState<Peer | null>(null);
     const [peerId, setPeerId] = useState('');
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);

@@ -19,6 +19,7 @@ export const EVENTS = {
   TOGGLE_PARTICIPATE: "toggleParticipate",
   CALL_STATUS_UPDATED: "callStatusUpdated",
   USER_REGISTERED: "userRegistered",
+  CALL_ENDED: "callEnded",
 
 
   //notifications

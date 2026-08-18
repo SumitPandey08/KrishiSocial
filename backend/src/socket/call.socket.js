@@ -23,6 +23,13 @@ export default function registerCallHandlers(io, socket) {
       socket.emit("error", { message: error.message });
     }
   });
+
+  socket.on(EVENTS.CALL_ENDED, (data) => {
+    const { chatId, callId } = data;
+    io.to(chatId).emit(EVENTS.CALL_ENDED, { callId });
+  });
+
 }
+
 
 
