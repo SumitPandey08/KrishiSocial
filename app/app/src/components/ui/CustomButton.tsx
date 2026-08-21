@@ -78,9 +78,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E40AF', 
     paddingHorizontal: 18,
     paddingVertical: 7,
-    borderRadius: 10, 
+    borderRadius: 20, 
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8 },
+      android: { elevation: 3 },
+    }),
   },
   followButtonText: {
     color: '#FFFFFF',
@@ -95,7 +99,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 18,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -112,7 +116,7 @@ const styles = StyleSheet.create({
     borderColor: '#F1F5F9',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: '100%',
     height: 54,
-    borderRadius: 16,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({

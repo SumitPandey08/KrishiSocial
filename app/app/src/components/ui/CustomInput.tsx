@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, TextInputProps, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, TextInputProps, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface AuthInputProps extends TextInputProps {
@@ -82,9 +82,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 56, // h-14
-    paddingHorizontal: 16, // px-4
+    paddingHorizontal: 14, // px-4
     borderRadius: 16, // rounded-2xl
-    borderWidth: 2, // border-2
+    borderWidth: 1, // softened border
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 1 },
+    }),
   },
   inputWrapperFocused: {
     borderColor: '#3B82F6', // border-blue-500
@@ -92,7 +96,7 @@ const styles = StyleSheet.create({
   },
   inputWrapperUnfocused: {
     borderColor: '#F3F4F6', // border-gray-100
-    backgroundColor: '#F9FAFB', // bg-gray-50
+    backgroundColor: '#FBFDFF', // slightly off-white for depth
   },
   inputWrapperDisabled: {
     borderColor: '#E5E7EB',
@@ -116,5 +120,8 @@ const styles = StyleSheet.create({
     fontSize: 18, // text-lg
     color: '#111827', // text-gray-900
     lineHeight: 24, // leading-6
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 14,
   },
 });
