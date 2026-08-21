@@ -1,129 +1,164 @@
-import React from 'react'
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePeer } from '@/hooks/usePeer';
 import { useSocket } from '@/context/SocketContext';
+import { useAuth } from '@/context/AuthContext';
 import { EVENTS } from '@/utils/event.constants';
-import { useEffect, useState } from 'react';
-import { getCallDetails , toggleParticipate } from '@/services/callService';
+import { toggleParticipate, getCallDetails } from '@/services/callService';
 
+interface RingOrCallingProps {
+    chatId: string;
+    incomingData?: any;
+    onDismiss?: () => void;
+}
 
-// component to show ring or calling state based on the call status an also to accept or reject the call
-const RingOrCalling = ({ callId, userId, isInitiator = false }: { callId: string; userId: string; isInitiator?: boolean }) => {
+// Component to show incoming call banner and accept/reject actions
+const RingOrCalling = ({ chatId, incomingData, onDismiss }: RingOrCallingProps) => {
     const router = useRouter();
-    const [isActiveCall, setIsActiveCall] = React.useState(false);
+    const { user } = useAuth();
     const { socket, isConnected } = useSocket();
-    const [remotePeerId, setRemotePeerId] = React.useState('');
-    const [isAcceptingCall, setIsAcceptingCall] = React.useState(false);
-    const [isRejectingCall, setIsRejectingCall] = React.useState(false);
-    const { peerId, localStream, remoteStream } = usePeer(userId, socket);
-    const [callDetails, setCallDetails] = useState<any>(null);
+
+    const [isAcceptingCall, setIsAcceptingCall] = useState(false);
+    const [isRejectingCall, setIsRejectingCall] = useState(false);
+    const [callId, setCallId] = useState<string>(
+        incomingData?.callId || incomingData?.call?._id || ''
+    );
+    const [callerName, setCallerName] = useState<string>(
+        incomingData?.call?.initiator?.name || incomingData?.initiatorName || 'Incoming Call'
+    );
 
     useEffect(() => {
-        const fetchCallDetails = async () => {
-            if (callId) {
-                const details = await getCallDetails(callId);
-                setCallDetails(details);
-            }
-        };
+        if (!incomingData) return;
+        const cId = incomingData?.callId || incomingData?.call?._id || '';
+        if (cId) setCallId(cId);
 
-        fetchCallDetails();
-    }, [callId]);
+        if (incomingData?.call?.initiator?.name) {
+            setCallerName(incomingData.call.initiator.name);
+        }
+    }, [incomingData]);
 
     useEffect(() => {
         if (!socket || !isConnected) return;
 
         const handleIncomingCall = (payload: any) => {
-            const incomingRemotePeerId = payload?.remotePeerId || '';
-            const incomingCallId = payload?.call?._id || payload?.call?.id || payload?.callId || '';
-
-            if (incomingRemotePeerId) {
-                setRemotePeerId(incomingRemotePeerId);
-            }
-
+            const incomingCallId = payload?.callId || payload?.call?._id || '';
             if (incomingCallId) {
-                setCallDetails((prev: any) => ({ ...prev, callId: incomingCallId }));
+                setCallId(incomingCallId);
+            }
+            if (payload?.call?.initiator?.name) {
+                setCallerName(payload.call.initiator.name);
+            }
+        };
+
+        const handleCallStatusUpdated = (payload: any) => {
+            const updatedCallId = payload?.callId || payload?.call?._id;
+            if (updatedCallId && updatedCallId === callId) {
+                const action = payload?.action || payload?.call?.callStatus;
+                if (action === 'rejected' || action === 'ended' || action === 'decline') {
+                    onDismiss?.();
+                }
+            }
+        };
+
+        const handleCallEnded = (payload: any) => {
+            if (!payload?.callId || payload.callId === callId) {
+                onDismiss?.();
             }
         };
 
         socket.on(EVENTS.CALL_INITIATED, handleIncomingCall);
-
-        socket.on(EVENTS.CALL_ENDED, () => {
-            setIsActiveCall(false);
-            router.push(`/charcha/${userId}`);
-        });
+        socket.on(EVENTS.CALL_STATUS_UPDATED, handleCallStatusUpdated);
+        socket.on(EVENTS.CALL_ENDED, handleCallEnded);
 
         return () => {
-            if (socket) {
-                socket.off(EVENTS.CALL_INITIATED, handleIncomingCall);
-                socket.off(EVENTS.CALL_ENDED);
-            }
+            socket.off(EVENTS.CALL_INITIATED, handleIncomingCall);
+            socket.off(EVENTS.CALL_STATUS_UPDATED, handleCallStatusUpdated);
+            socket.off(EVENTS.CALL_ENDED, handleCallEnded);
         };
-    }, [socket, isConnected, userId]);
+    }, [socket, isConnected, callId, onDismiss]);
 
     const handleAcceptCall = async () => {
         setIsAcceptingCall(true);
-        await toggleParticipate(callId, userId, 'accept');
-        setIsActiveCall(true);
-        router.push(`/charcha/${userId}/call/${callId}`);
+
+        const currentCallId = callId;
+        const currentUserId = user?.id;
+
+        if (socket && currentCallId) {
+            socket.emit(EVENTS.TOGGLE_PARTICIPATE, {
+                callId: currentCallId,
+                userId: currentUserId,
+                action: 'accept'
+            });
+        }
+
+        if (currentCallId && currentUserId) {
+            try {
+                await toggleParticipate(currentCallId, currentUserId, 'accept');
+            } catch (err) {
+                console.error("Error accepting call:", err);
+            }
+        }
+
+        if (currentCallId) {
+            router.push(`/charcha/${chatId}/call/${currentCallId}`);
+        } else {
+            router.push(`/charcha/${chatId}`);
+        }
     };
-    
+
     const handleRejectCall = async () => {
         setIsRejectingCall(true);
-        await toggleParticipate(callId, userId, 'reject');
-        setIsActiveCall(false);
-        router.push(`/charcha/${userId}`);
+
+        const currentCallId = callId;
+        const currentUserId = user?.id;
+
+        if (socket && currentCallId) {
+            socket.emit(EVENTS.TOGGLE_PARTICIPATE, {
+                callId: currentCallId,
+                userId: currentUserId,
+                action: 'decline'
+            });
+        }
+
+        if (currentCallId && currentUserId) {
+            try {
+                await toggleParticipate(currentCallId, currentUserId, 'decline');
+            } catch (err) {
+                console.error("Error declining call:", err);
+            }
+        }
+
+        setIsRejectingCall(false);
+        onDismiss?.();
     };
 
-    //end call will be in video and audio component where the call is active and user can end the call
-
-  return (
-    <div className="rounded-2xl p-4 bg-white">
-        {isActiveCall ? (
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-semibold text-gray-900">Call is active</p>
-                    <p className="text-xs text-gray-500">Connected with {remotePeerId || 'the other participant'}</p>
-                </div>
-                <div className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                    Live
-                </div>
-            </div>
-        ) : isInitiator ? (
-            <div className="flex items-center justify-between gap-3">
-                <div>
-                    <p className="text-sm font-semibold text-gray-900">Calling...</p>
-                    <p className="text-xs text-gray-500">Waiting for the other person to answer</p>
-                </div>
-                <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                    Ringing
-                </div>
-            </div>
-        ) : (
+    return (
+        <div className="rounded-2xl p-4 bg-white shadow-xl border border-green-100">
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <p className="text-sm font-semibold text-gray-900">Incoming call</p>
-                    <p className="text-xs text-gray-500">{callDetails?.initiator?.name || callDetails?.initiatorName || 'Someone is calling you'}</p>
+                    <p className="text-xs text-gray-500">{callerName}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={handleAcceptCall}
                         disabled={isAcceptingCall}
-                        className="rounded-full bg-green-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                        className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 transition"
                     >
                         {isAcceptingCall ? 'Accepting...' : 'Accept'}
                     </button>
                     <button
                         onClick={handleRejectCall}
                         disabled={isRejectingCall}
-                        className="rounded-full bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 disabled:opacity-60"
+                        className="rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 disabled:opacity-60 transition"
                     >
                         {isRejectingCall ? 'Rejecting...' : 'Reject'}
                     </button>
                 </div>
             </div>
-        )}
-    </div>
-  )
-}
+        </div>
+    );
+};
 
-export default RingOrCalling
+export default RingOrCalling;

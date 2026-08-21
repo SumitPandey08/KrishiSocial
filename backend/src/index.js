@@ -54,6 +54,7 @@ app.use("/api/communities", communityRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/call", callRoutes);
 app.use("/api/calls", callRoutes);
 
 // Health check

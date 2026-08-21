@@ -35,7 +35,7 @@ const callSchema = new mongoose.Schema(
     },
     callStatus: {
       type: String,
-      enum: ["initiated", "ringing", "accepted", "rejected", "ended", "missed"],
+      enum: ["initiated", "ringing", "accepted", "rejected", "ended", "missed", "busy"],
       default: "initiated",
       index: true,
     },
@@ -66,14 +66,13 @@ function arrayMinLength(val) {
 }
 
 // Pre-save middleware to calculate duration automatically when call ends
-callSchema.pre("save", function (next) {
+callSchema.pre("save", function () {
   if (this.isModified("callStatus") && this.callStatus === "ended") {
     this.endedAt = new Date();
     if (this.startedAt) {
       this.duration = Math.round((this.endedAt - this.startedAt) / 1000);
     }
   }
-  next();
 });
 
 const Call = mongoose.model("Call", callSchema);

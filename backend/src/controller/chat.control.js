@@ -33,7 +33,7 @@ export const createChat = async (req, res) => {
       const existingChat = await Chat.findOne({
         chatType: "personal",
         participants: { $all: [req.user.id, participants[0]] },
-      });
+      }).populate("participants", "username name profilePicture");
       if (existingChat) {
         return res.status(200).json(existingChat);
       }
@@ -53,7 +53,10 @@ export const createChat = async (req, res) => {
     });
 
     await chat.save();
-    res.status(201).json(chat);
+    const populatedChat = await Chat.findById(chat._id)
+      .populate("participants", "username name profilePicture")
+      .populate("communityId", "name avatar description");
+    res.status(201).json(populatedChat);
   } catch (error) {
     console.error("Error creating chat:", error);
     res.status(500).json({ message: "Internal server error" });

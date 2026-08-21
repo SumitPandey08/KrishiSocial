@@ -16,11 +16,14 @@ import {
   Loader2,
   Image as ImageIcon,
   Paperclip,
-  User as UserIcon
+  User as UserIcon,
+  Phone,
+  Video
 } from 'lucide-react';
 import Image from 'next/image';
 import { usePeer } from '@/hooks/usePeer';
 import RingOrCalling from '@/components/call/RingOrCalling';
+import { initiateCall } from '@/services/callService';
 
 
 interface Message {
@@ -56,57 +59,110 @@ export default function ChatPage() {
 
   };
 
-  //call initiation that will give us callId and remotePeerId
-  const { peerId } = usePeer(id as string, socket);
-  const [remotePeerId, setRemotePeerId] = useState('');
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [callId, setCallId] = useState('');
-  const [isInitiator, setIsInitiator] = useState(false);
+  // Call initiation and handling
+  const { peerId } = usePeer(user?.id || (id as string), socket);
   const [isReceivingCall, setIsReceivingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState<any>(null);
+  const [isCalling, setIsCalling] = useState(false);
+  const [callAlert, setCallAlert] = useState<string | null>(null);
 
-  // logic for call button click to initiate call
-  const handleCallButtonClick = () => {
-    if (!socket || !peerId || !chat?._id || !user?.id) return;
+  // Logic for initiating call
+  const handleCallButtonClick = async (callType: 'video' | 'audio' = 'video') => {
+    const currentUserId = user?.id || (user as any)?._id;
+    if (!currentUserId || !chat?._id || isCalling) return;
 
-    const payload = {
-      initiatorId: user.id,
-      chatId: chat._id,
-      callType: 'audio'
-    };
+    setIsCalling(true);
+    try {
+      // 1. Initiate via backend REST API to check busy state & create Call document
+      const res = await initiateCall(currentUserId, chat._id, callType);
 
-    socket.emit(EVENTS.INITIATE_CALL, payload);
-    setCallId(chat._id);
-    setIncomingCallData(null);
-    setIsInitiator(true);
-    setIsReceivingCall(false);
-    setIsCallActive(true);
-    console.log('Call initiated with payload:', payload, 'peerId:', peerId);
+      if (res?.isBusy) {
+        setCallAlert(res.message || "User is currently busy on another call.");
+        setTimeout(() => setCallAlert(null), 4000);
+        return;
+      }
+
+      const activeCallId = res?.callId || res?.call?._id;
+
+      // 2. Broadcast to receiver via socket
+      if (socket && isConnected) {
+        socket.emit(EVENTS.INITIATE_CALL, {
+          initiatorId: currentUserId,
+          chatId: chat._id,
+          callType,
+          peerId: peerId || undefined,
+          callId: activeCallId,
+        });
+      }
+
+      // 3. Immediately redirect initiator to dynamic call room
+      if (activeCallId) {
+        router.push(`/charcha/${chat._id || id}/call/${activeCallId}`);
+      }
+    } catch (error: any) {
+      console.error("Failed to initiate call via API, fallback to socket:", error);
+      if (socket && isConnected) {
+        socket.emit(EVENTS.INITIATE_CALL, {
+          initiatorId: currentUserId,
+          chatId: chat._id,
+          callType,
+          peerId: peerId || undefined,
+        });
+      }
+    } finally {
+      setIsCalling(false);
+    }
   };
 
-  // logic for receiving call
+  // Logic for receiving and routing call events
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isConnected) return;
 
     const handleIncomingCall = (payload: any) => {
-      const incomingCallId = payload?.call?._id || payload?.call?.id || payload?.callId || '';
-      const incomingRemotePeerId = payload?.remotePeerId || '';
+      const incomingCallId = payload?.callId || payload?.call?._id;
+      const callerId = payload?.call?.initiator?._id || payload?.call?.initiator;
+      const isMyCall = callerId?.toString() === user?.id?.toString();
 
-      setRemotePeerId(incomingRemotePeerId);
-      setCallId(incomingCallId);
-      setIsInitiator(false);
-      setIsReceivingCall(true);
-      setIsCallActive(false);
-      setIncomingCallData({ remotePeerId: incomingRemotePeerId, callId: incomingCallId, call: payload?.call });
-      console.log('Incoming call received:', payload);
+      if (isMyCall && incomingCallId) {
+        // Initiator navigates directly to dynamic call room
+        router.push(`/charcha/${chat?._id || id}/call/${incomingCallId}`);
+      } else if (!isMyCall && incomingCallId) {
+        // Receiver receives incoming call prompt
+        setIncomingCallData(payload);
+        setIsReceivingCall(true);
+      }
+    };
+
+    const handleCallBusy = (payload: any) => {
+      setCallAlert(payload?.message || "User is currently busy on another call.");
+      setTimeout(() => setCallAlert(null), 4000);
+    };
+
+    const handleCallStatusUpdated = (payload: any) => {
+      const action = payload?.action || payload?.call?.callStatus;
+      if (action === 'rejected' || action === 'ended' || action === 'decline' || action === 'busy') {
+        setIsReceivingCall(false);
+        setIncomingCallData(null);
+      }
+    };
+
+    const handleCallEnded = () => {
+      setIsReceivingCall(false);
+      setIncomingCallData(null);
     };
 
     socket.on(EVENTS.CALL_INITIATED, handleIncomingCall);
+    socket.on(EVENTS.CALL_BUSY, handleCallBusy);
+    socket.on(EVENTS.CALL_STATUS_UPDATED, handleCallStatusUpdated);
+    socket.on(EVENTS.CALL_ENDED, handleCallEnded);
 
     return () => {
       socket.off(EVENTS.CALL_INITIATED, handleIncomingCall);
+      socket.off(EVENTS.CALL_BUSY, handleCallBusy);
+      socket.off(EVENTS.CALL_STATUS_UPDATED, handleCallStatusUpdated);
+      socket.off(EVENTS.CALL_ENDED, handleCallEnded);
     };
-  }, [socket, isConnected]);
+  }, [socket, isConnected, user?.id, chat?._id, id, router]);
   
 
 
@@ -161,7 +217,19 @@ export default function ChatPage() {
             participants: []
           });
         } catch (error) {
-          console.error("Failed to fetch community/chat data:", error);
+          console.log("Not a community ID, trying as user ID for personal chat...");
+        }
+      }
+
+      // 3. If still not found, try to fetch/create as a personal chat with target user ID
+      if (!currentChat) {
+        try {
+          currentChat = await createChat({
+            chatType: 'personal',
+            participants: [id as string]
+          });
+        } catch (error) {
+          console.error("Failed to fetch personal chat data:", error);
         }
       }
 
@@ -245,16 +313,29 @@ export default function ChatPage() {
     ? chat.communityId?.avatar
     : otherParticipant?.profilePicture;
 
-  const shouldShowCallOverlay = isReceivingCall || isInitiator || isCallActive;
+  const shouldShowCallOverlay = isReceivingCall && incomingCallData;
 
   return (
     <AppLayout>
+      {callAlert && (
+        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 shadow-2xl backdrop-blur-md pointer-events-auto flex items-center gap-2 animate-bounce">
+            <span>⚠️</span>
+            <span>{callAlert}</span>
+          </div>
+        </div>
+      )}
+
       {shouldShowCallOverlay && (
         <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
-          <div className="w-full max-w-md rounded-2xl border border-green-100 bg-white/95 shadow-2xl backdrop-blur-md pointer-events-auto">
+          <div className="w-full max-w-md pointer-events-auto">
             <RingOrCalling
-              callId={incomingCallData?.callId || callId || chat._id}
-              userId={id as string}
+              chatId={chat?._id || (id as string)}
+              incomingData={incomingCallData}
+              onDismiss={() => {
+                setIsReceivingCall(false);
+                setIncomingCallData(null);
+              }}
             />
           </div>
         </div>
@@ -286,17 +367,32 @@ export default function ChatPage() {
                   </p>
                 </div>
               </div>
-              {/* add call button for personal chats */}
-              {chat.chatType === 'personal' && (
-                <button
-                  onClick={() => handleCallButtonClick()}
-                  className="absolute bottom-7 right-5 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition-all"
-                >
-                  <Users size={22} />
-                </button>
-              )}
             </div>
           </div>
+
+          {/* Call action buttons for personal chats */}
+          {!isCommunity && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleCallButtonClick('audio')}
+                disabled={isCalling}
+                className="w-10 h-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
+                title="Start Audio Call"
+              >
+                <Phone size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCallButtonClick('video')}
+                disabled={isCalling}
+                className="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all shadow-md shadow-green-200 disabled:opacity-50"
+                title="Start Video Call"
+              >
+                <Video size={18} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Messages Area */}

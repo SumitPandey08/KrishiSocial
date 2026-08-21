@@ -20,6 +20,11 @@ export const EVENTS = {
   CALL_STATUS_UPDATED: "callStatusUpdated",
   USER_REGISTERED: "userRegistered",
   CALL_ENDED: "callEnded",
+  CALL_BUSY: "callBusy",
+  JOIN_CALL: "joinCall",
+  USER_JOINED_CALL: "userJoinedCall",
+  LEAVE_CALL: "leaveCall",
+  USER_LEFT_CALL: "userLeftCall",
 
 
   //notifications
