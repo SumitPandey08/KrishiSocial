@@ -7,7 +7,7 @@ import Like from "../model/like.model.js";
 import CommentLike from "../model/commentLike.model.js";
 import Community from "../model/community.model.js";
 import Vote from "../model/vote.model.js";
-import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { uploadToCloudinary , deleteFromCloudinary } from "../utils/cloudinary.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -580,6 +580,12 @@ export const deletePost = async (req, res) => {
 
     if (post.user.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to delete this post" });
+    }
+
+    //get all media public ids and delete from cloudinary
+    for (const mediaItem of post.media) {
+      const publicId = mediaItem.url.split("/").pop().split(".")[0];
+      await deleteFromCloudinary(publicId);
     }
 
     await post.deleteOne();

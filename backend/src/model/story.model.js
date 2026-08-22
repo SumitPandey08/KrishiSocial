@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { deleteFromCloudinary } from "../utils/cloudinary.js";
+
 
 const storySchema = new mongoose.Schema(
   {
@@ -73,6 +75,15 @@ const storySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+//function that run when story expires to delete the story and its media from cloudinary
+storySchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    // await deleteFromCloudinary(doc.media.url);
+    const publicId = doc.media.url.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(publicId);
+  }
+});
 
 const Story = mongoose.model("Story", storySchema);
 
