@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme inline {
@@ -20,6 +22,12 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,8 +37,19 @@
   }
 }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
 }
