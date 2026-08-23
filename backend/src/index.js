@@ -78,5 +78,4 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 });
 
 initSocket(server);
-redisClient.on('connect', () => console.log('🔄 Connecting to Redis...'));
 
