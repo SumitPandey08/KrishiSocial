@@ -59,7 +59,7 @@ const storySchema = new mongoose.Schema(
     privacy: {
       type: String,
       enum: ["public", "followers", "close_friends"],
-      default: "followers",
+      default: "public",
     },
 
     isHighlight: {

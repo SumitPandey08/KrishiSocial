@@ -30,7 +30,7 @@ export const createStory = async (req, res) => {
       user: req.user.id,
       media,
       caption: caption || "",
-      privacy: privacy || "followers",
+      privacy: privacy || "public",
     });
 
     const populatedStory = await story.populate("user", "name username profilePicture isVerified");
@@ -46,27 +46,31 @@ export const createStory = async (req, res) => {
 |--------------------------------------------------------------------------
 | 2️⃣ Get Feed Stories (Home Feed Story Tray)
 |--------------------------------------------------------------------------
-| Aggregates active stories from followed users and logged-in user.
+| Aggregates active stories from followed users, public stories, and logged-in user.
 | Grouped by user, sorted so own stories are first, followed by accounts
 | with unread/unseen stories, and finally all-viewed accounts.
 */
 export const getFeedStories = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.user.id || req.user._id?.toString();
 
     // 1. Get IDs of users followed by the current user
     const following = await Follow.find({ follower: currentUserId }).select("following");
-    const followingIds = following.map((f) => f.following);
-
-    // Include the current user's own stories in the feed tray
-    const allUserIds = [...followingIds, currentUserId];
+    const followingIds = following.map((f) => f.following.toString());
 
     const now = new Date();
 
-    // 2. Fetch active stories from these users (sorted chronologically for reel playback)
+    // 2. Fetch active stories from:
+    // - Current user's own stories
+    // - Followed users' stories
+    // - Public stories from other users
     const activeStories = await Story.find({
-      user: { $in: allUserIds },
       expiresAt: { $gt: now },
+      $or: [
+        { user: currentUserId },
+        { user: { $in: followingIds } },
+        { privacy: "public" },
+      ],
     })
       .populate("user", "name username profilePicture isVerified")
       .sort({ createdAt: 1 });
@@ -78,14 +82,14 @@ export const getFeedStories = async (req, res) => {
       if (!story.user) continue;
 
       const userIdStr = story.user._id.toString();
-      const isOwnStory = userIdStr === currentUserId;
+      const isOwnStory = userIdStr === currentUserId.toString();
 
       const isViewedByMe = story.viewers.some(
-        (viewer) => viewer.user && viewer.user.toString() === currentUserId
+        (viewer) => viewer.user && viewer.user.toString() === currentUserId.toString()
       );
 
       const myReaction = story.reactions.find(
-        (r) => r.user && r.user.toString() === currentUserId
+        (r) => r.user && r.user.toString() === currentUserId.toString()
       )?.emoji || null;
 
       if (!groupedMap.has(userIdStr)) {
@@ -100,7 +104,7 @@ export const getFeedStories = async (req, res) => {
 
       const userGroup = groupedMap.get(userIdStr);
 
-      // Track if there is any unviewed story for followed users
+      // Track if there is any unviewed story for other users
       if (!isViewedByMe && !isOwnStory) {
         userGroup.hasUnseen = true;
       }
@@ -129,15 +133,27 @@ export const getFeedStories = async (req, res) => {
     // 4. Sort story tray:
     // - Own story group comes first
     // - Followed users with unseen stories next (newest story first)
-    // - Followed users where all stories are viewed last (newest story first)
+    // - Other users with unseen stories next
+    // - Followed users where all stories are viewed next
+    // - Other users where all stories are viewed last
     groupedArray.sort((a, b) => {
       if (a.isOwnStory) return -1;
       if (b.isOwnStory) return 1;
 
+      const aId = a.user?._id?.toString();
+      const bId = b.user?._id?.toString();
+      const aIsFollowing = followingIds.includes(aId);
+      const bIsFollowing = followingIds.includes(bId);
+
+      // Prioritize followed users over non-followed
+      if (aIsFollowing && !bIsFollowing) return -1;
+      if (!aIsFollowing && bIsFollowing) return 1;
+
+      // Prioritize groups with unseen stories
       if (a.hasUnseen && !b.hasUnseen) return -1;
       if (!a.hasUnseen && b.hasUnseen) return 1;
 
-      return new Date(b.latestStoryCreatedAt) - new Date(a.latestStoryCreatedAt);
+      return new Date(b.latestStoryCreatedAt).getTime() - new Date(a.latestStoryCreatedAt).getTime();
     });
 
     res.json(groupedArray);
