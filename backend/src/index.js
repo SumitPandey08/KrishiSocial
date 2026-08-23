@@ -1,3 +1,8 @@
+import crypto from "node:crypto";
+if (!globalThis.crypto) {
+  globalThis.crypto = crypto.webcrypto || crypto;
+}
+
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";

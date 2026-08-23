@@ -1,6 +1,6 @@
 import User from "../model/user.model.js";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 /*
 |--------------------------------------------------------------------------
