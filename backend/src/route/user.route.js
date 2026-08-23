@@ -3,52 +3,44 @@ import {
   getMyProfile,
   getUserProfile,
   updateProfile,
+  updateProfilePicture,
   toggleFollow,
   getFollowers,
   getFollowing,
   searchUsers,
   deactivateAccount,
 } from "../controller/user.control.js";
-import { protect } from "../middleware/auth.middleware.js";
+import { protect, optionalAuth } from "../middleware/auth.middleware.js";
 import upload from "../middleware/multer.js";
-import { uploadToCloudinary } from "../utils/cloudinary.js";
-import User from "../model/user.model.js";
 
 const router = express.Router();
 
-// Public routes
-router.get("/:username", getUserProfile);
+/*
+|--------------------------------------------------------------------------
+| Specific Routes (Must be declared BEFORE dynamic /:username wildcard)
+|--------------------------------------------------------------------------
+*/
+
+// 1. Search Users
 router.get("/search", searchUsers);
 
-// Protected routes
-router.use(protect);
-
-router.get("/me", getMyProfile);
+// 2. Logged-in User Profile Routes
+router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateProfile);
+router.put("/me/picture", protect, upload.single("profilePicture"), updateProfilePicture);
 router.delete("/me/deactivate", protect, deactivateAccount);
 
-// Picture upload route explicitly
-router.put("/me/picture", protect, upload.single("profilePicture"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No image provided" });
-    }
-    const result = await uploadToCloudinary(req.file.buffer, "image");
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { profilePicture: result.secure_url },
-      { new: true }
-    ).select("name username profilePicture");
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
+// 3. User Follow Relationships
 router.post("/:userId/toggle-follow", protect, toggleFollow);
-// router.post("/:userId/follow", protect, followUser);
-// router.post("/:userId/unfollow", protect, unfollowUser);
 router.get("/:userId/followers", protect, getFollowers);
 router.get("/:userId/following", protect, getFollowing);
+
+/*
+|--------------------------------------------------------------------------
+| Dynamic Parameterized Routes (Declared LAST)
+|--------------------------------------------------------------------------
+*/
+// 4. Public User Profile by Username (Uses optionalAuth for viewer follower check + Redis cache)
+router.get("/:username", optionalAuth, getUserProfile);
 
 export default router;

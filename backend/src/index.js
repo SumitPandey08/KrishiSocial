@@ -21,6 +21,9 @@ import callRoutes from "./route/call.route.js";
 // Socket
 import { initSocket } from "./config/socket.js";
 
+//redis
+import redisClient from "./config/redis.js";
+
 import { loadDataset } from "./services/datasetLoader.js";
 import { startKeepAliveService } from "./services/keepAliveService.js";
 
@@ -75,3 +78,5 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 });
 
 initSocket(server);
+redisClient.on('connect', () => console.log('🔄 Connecting to Redis...'));
+

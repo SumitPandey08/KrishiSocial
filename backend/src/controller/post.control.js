@@ -8,6 +8,7 @@ import CommentLike from "../model/commentLike.model.js";
 import Community from "../model/community.model.js";
 import Vote from "../model/vote.model.js";
 import { uploadToCloudinary , deleteFromCloudinary } from "../utils/cloudinary.js";
+import { deleteCache } from "../utils/redisCache.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +79,7 @@ export const createPost = async (req, res) => {
     });
 
     await User.findByIdAndUpdate(req.user.id, { $inc: { postsCount: 1 } });
+    await deleteCache(`user:me:${req.user.id}`, `user:profile:${req.user.username?.toLowerCase()}`);
 
     const populatedPost = await post.populate("user", "name username profilePicture role");
 
@@ -593,6 +595,8 @@ export const deletePost = async (req, res) => {
     await Like.deleteMany({ post: req.params.id });
 
     await User.findByIdAndUpdate(req.user.id, { $inc: { postsCount: -1 } });
+    // Clear relevant cache entries for the user to ensure feed and profile data is up-to-date
+    await deleteCache(`user:me:${req.user.id}`, `user:profile:${req.user.username?.toLowerCase()}`);
 
     res.json({ message: "Post deleted successfully" });
   } catch (error) {
