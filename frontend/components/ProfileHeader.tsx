@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogOut, Grid, HelpCircle, MapPin, LandPlot, Sprout, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createChat } from '@/services/chatService';
-
+import { toggleFollow } from '@/services/userService';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,14 +42,46 @@ export default function ProfileHeader({
   onTabChange,
 }: ProfileProps) {
   const router = useRouter();
-  const [isFollowing, setIsFollowing] = useState(data.isFollowing || false);
+  const [isFollowing, setIsFollowing] = useState(Boolean(data.isFollowing));
   const [followersCount, setFollowersCount] = useState(data.followersCount || 0);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isMessaging, setIsMessaging] = useState(false);
 
-  const handleFollowToggle = () => {
-    const newStatus = !isFollowing;
-    setIsFollowing(newStatus);
-    setFollowersCount(prev => newStatus ? prev + 1 : Math.max(0, prev - 1));
+  // Sync state when data props change
+  useEffect(() => {
+    setIsFollowing(Boolean(data.isFollowing));
+    setFollowersCount(data.followersCount || 0);
+  }, [data.isFollowing, data.followersCount]);
+
+  const handleFollowToggle = async () => {
+    if (!data._id || isFollowLoading) return;
+
+    const previousStatus = isFollowing;
+    const previousCount = followersCount;
+    const optimisticStatus = !previousStatus;
+    const optimisticCount = optimisticStatus ? previousCount + 1 : Math.max(0, previousCount - 1);
+
+    // Optimistic update
+    setIsFollowing(optimisticStatus);
+    setFollowersCount(optimisticCount);
+    setIsFollowLoading(true);
+
+    try {
+      const res = await toggleFollow(data._id);
+      setIsFollowing(Boolean(res.isFollowing));
+      if (typeof res.followersCount === 'number') {
+        setFollowersCount(res.followersCount);
+      }
+    } catch (error: any) {
+      console.error('Follow toggle error:', error);
+      // Revert on error
+      setIsFollowing(previousStatus);
+      setFollowersCount(previousCount);
+      const errorMsg = error?.response?.data?.message || 'Failed to update follow status';
+      alert(errorMsg);
+    } finally {
+      setIsFollowLoading(false);
+    }
   };
 
   const handleMessage = async () => {
@@ -57,12 +89,12 @@ export default function ProfileHeader({
     try {
       const chat = await createChat({
         chatType: 'personal',
-        participants: [data._id]
+        participants: [data._id],
       });
       router.push(`/charcha/${chat._id}`);
     } catch (error) {
-      console.error("Failed to start chat:", error);
-      alert("Failed to start conversation. Please try again.");
+      console.error('Failed to start chat:', error);
+      alert('Failed to start conversation. Please try again.');
     } finally {
       setIsMessaging(false);
     }
@@ -71,8 +103,12 @@ export default function ProfileHeader({
   return (
     <div className="bg-white p-5 border-b border-gray-100">
       <div className="flex items-center gap-8 mb-4">
-        <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[#E8F5E9] shadow-sm">
-          <img src={data.profilePicture} alt={data.name} className="w-full h-full object-cover" />
+        <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[#E8F5E9] shadow-sm bg-gray-100">
+          <img
+            src={data.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&q=80'}
+            alt={data.name}
+            className="w-full h-full object-cover"
+          />
         </div>
         
         <div className="flex-1 flex justify-around">
@@ -105,7 +141,13 @@ export default function ProfileHeader({
             >
               Edit Profile
             </Link>
-            <button className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95">
+            <button 
+              onClick={() => {
+                navigator.clipboard?.writeText?.(window.location.href);
+                alert('Profile link copied to clipboard!');
+              }}
+              className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95"
+            >
               Share Profile
             </button>
             {onLogout && (
@@ -121,19 +163,24 @@ export default function ProfileHeader({
           <>
             <button 
               onClick={handleFollowToggle}
+              disabled={isFollowLoading}
               className={cn(
-                "flex-1 h-10 rounded-xl text-sm font-black transition-all active:scale-95",
+                "flex-1 h-10 rounded-xl text-sm font-black transition-all active:scale-95 flex items-center justify-center gap-1.5",
                 isFollowing 
-                  ? "bg-gray-100 text-gray-900" 
-                  : "bg-[#2E7D32] text-white shadow-md shadow-[#2E7D32]/20"
+                  ? "bg-gray-100 hover:bg-gray-200 text-gray-900" 
+                  : "bg-[#2E7D32] hover:bg-emerald-700 text-white shadow-md shadow-[#2E7D32]/20"
               )}
             >
-              {isFollowing ? 'Following' : 'Follow'}
+              {isFollowLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                isFollowing ? 'Following' : 'Follow'
+              )}
             </button>
             <button 
               onClick={handleMessage}
               disabled={isMessaging}
-              className="flex-1 h-10 bg-gray-100 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-black text-gray-900 transition-transform active:scale-95 flex items-center justify-center gap-2"
             >
               {isMessaging ? <Loader2 size={18} className="animate-spin" /> : 'Message'}
             </button>

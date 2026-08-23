@@ -234,9 +234,12 @@ export const toggleFollow = async (req, res) => {
       `user:profile:${req.user.username?.toLowerCase()}`
     );
 
+    const updatedTargetUser = await User.findById(userId).select("followersCount followingCount");
+
     res.json({
       message: isFollowing ? "Followed successfully" : "Unfollowed successfully",
       isFollowing,
+      followersCount: updatedTargetUser?.followersCount ?? 0,
     });
   } catch (error) {
     console.error("Toggle Follow Error:", error);
