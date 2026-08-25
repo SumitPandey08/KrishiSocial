@@ -42,7 +42,9 @@ coverage/
 # ==========================================
 # Mobile App & Native Folders (Excluded for now)
 # ==========================================
-app/
+/app/
+!frontend/app/
+!frontend/app/**
 android/
 ios/
 .kotlin/
