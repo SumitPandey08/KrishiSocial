@@ -36,6 +36,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  const isChatDetailPage = pathname.startsWith('/charcha/') && pathname !== '/charcha';
+
   return (
     <div className="flex justify-center xl:gap-4 2xl:gap-8 max-w-[1600px] mx-auto min-h-screen w-full px-0 md:px-4 xl:px-6 2xl:px-0">
       {/* Left Sidebar - Desktop only */}
@@ -43,13 +45,17 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area - Full width edge-to-edge on mobile, bordered card on desktop */}
       <div className="flex-1 w-full min-w-0 max-w-full md:max-w-[700px] 2xl:max-w-[800px] md:border-x border-gray-100 bg-white min-h-screen relative shadow-xs flex flex-col">
-        <div className="md:hidden sticky top-0 z-40">
-          <Header />
-        </div>
-        <main className="flex-1 w-full pb-28 md:pb-8">{children}</main>
-        <div className="md:hidden">
-          <BottomNav />
-        </div>
+        {!isChatDetailPage && (
+          <div className="md:hidden sticky top-0 z-40">
+            <Header />
+          </div>
+        )}
+        <main className={`flex-1 w-full ${isChatDetailPage ? 'pb-0' : 'pb-28 md:pb-8'}`}>{children}</main>
+        {!isChatDetailPage && (
+          <div className="md:hidden">
+            <BottomNav />
+          </div>
+        )}
       </div>
 
       {/* Right Sidebar - Desktop only */}

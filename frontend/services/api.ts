@@ -17,10 +17,30 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
-    
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (typeof window !== "undefined" && error.response?.status === 401) {
+      const pathname = window.location.pathname;
+      const isAuthPage = 
+        pathname === '/welcome' || 
+        pathname === '/login' || 
+        pathname === '/register' ||
+        pathname === '/get-started';
+
+      if (!isAuthPage) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        window.location.href = '/welcome';
+      }
+    }
     return Promise.reject(error);
   }
 );

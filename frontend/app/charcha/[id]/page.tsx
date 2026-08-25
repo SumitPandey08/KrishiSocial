@@ -9,22 +9,16 @@ import { sendMessage } from '@/services/messageService';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
 import { EVENTS } from '@/utils/event.constants';
-import {
-  Send,
-  ArrowLeft,
-  Users,
-  Loader2,
-  Image as ImageIcon,
-  Paperclip,
-  User as UserIcon,
-  Phone,
-  Video
-} from 'lucide-react';
-import Image from 'next/image';
+import { Loader2, Sprout } from 'lucide-react';
 import { usePeer } from '@/hooks/usePeer';
 import RingOrCalling from '@/components/call/RingOrCalling';
 import { initiateCall } from '@/services/callService';
 
+// Modular Charcha Components
+import ChatHeader from '@/components/charcha/ChatHeader';
+import CommunityDrawer from '@/components/charcha/CommunityDrawer';
+import MessageList from '@/components/charcha/MessageList';
+import MessageInput from '@/components/charcha/MessageInput';
 
 interface Message {
   _id: string;
@@ -33,12 +27,20 @@ interface Message {
     username: string;
     name: string;
     profilePicture?: string;
+    role?: string;
   };
   content: string;
   messageType: string;
   mediaUrl?: string;
   createdAt: string;
 }
+
+const QUICK_TOPICS = [
+  "🌾 Mandi Rate Query",
+  "🌱 Crop Disease Help",
+  "🧪 Fertilizer & Spray Advice",
+  "🌦️ Weather & Sowing"
+];
 
 export default function ChatPage() {
   const { id } = useParams();
@@ -51,29 +53,36 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  const [showInfoDrawer, setShowInfoDrawer] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
   };
 
-  // Call initiation and handling
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const isFarFromBottom = scrollHeight - scrollTop - clientHeight > 150;
+    setShowScrollBottom(isFarFromBottom);
+  };
+
+  // Call state & hooks
   const { peerId } = usePeer(user?.id || (id as string), socket);
   const [isReceivingCall, setIsReceivingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState<any>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [callAlert, setCallAlert] = useState<string | null>(null);
 
-  // Logic for initiating call
   const handleCallButtonClick = async (callType: 'video' | 'audio' = 'video') => {
     const currentUserId = user?.id || (user as any)?._id;
     if (!currentUserId || !chat?._id || isCalling) return;
 
     setIsCalling(true);
     try {
-      // 1. Initiate via backend REST API to check busy state & create Call document
       const res = await initiateCall(currentUserId, chat._id, callType);
 
       if (res?.isBusy) {
@@ -84,7 +93,6 @@ export default function ChatPage() {
 
       const activeCallId = res?.callId || res?.call?._id;
 
-      // 2. Broadcast to receiver via socket
       if (socket && isConnected) {
         socket.emit(EVENTS.INITIATE_CALL, {
           initiatorId: currentUserId,
@@ -95,7 +103,6 @@ export default function ChatPage() {
         });
       }
 
-      // 3. Immediately redirect initiator to dynamic call room
       if (activeCallId) {
         router.push(`/charcha/${chat._id || id}/call/${activeCallId}`);
       }
@@ -114,7 +121,7 @@ export default function ChatPage() {
     }
   };
 
-  // Logic for receiving and routing call events
+  // Socket call events
   useEffect(() => {
     if (!socket || !isConnected) return;
 
@@ -124,10 +131,8 @@ export default function ChatPage() {
       const isMyCall = callerId?.toString() === user?.id?.toString();
 
       if (isMyCall && incomingCallId) {
-        // Initiator navigates directly to dynamic call room
         router.push(`/charcha/${chat?._id || id}/call/${incomingCallId}`);
       } else if (!isMyCall && incomingCallId) {
-        // Receiver receives incoming call prompt
         setIncomingCallData(payload);
         setIsReceivingCall(true);
       }
@@ -163,9 +168,6 @@ export default function ChatPage() {
       socket.off(EVENTS.CALL_ENDED, handleCallEnded);
     };
   }, [socket, isConnected, user?.id, chat?._id, id, router]);
-  
-
-
 
   useEffect(() => {
     if (id) {
@@ -174,15 +176,13 @@ export default function ChatPage() {
   }, [id]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom(false);
+  }, [messages.length]);
 
   useEffect(() => {
     if (socket && chat?._id) {
-      // Join the chat room
       socket.emit(EVENTS.JOIN_CHAT, { chatId: chat._id });
 
-      // Listen for new messages
       socket.on(EVENTS.NEW_MESSAGE, (newMessage: Message) => {
         setMessages((prev) => [...prev, newMessage]);
       });
@@ -199,14 +199,12 @@ export default function ChatPage() {
       setLoading(true);
       let currentChat = null;
 
-      // 1. Try to fetch as a direct chat ID
       try {
         currentChat = await getChatById(id as string);
       } catch (error) {
-        console.log("Not a chat ID, trying as community ID...");
+        console.log("Not a direct chat ID, checking as community ID...");
       }
 
-      // 2. If not found, try to fetch as a community ID and get/create its chat
       if (!currentChat) {
         try {
           const communityData = await getCommunity(id as string);
@@ -216,12 +214,14 @@ export default function ChatPage() {
             communityId: communityData._id,
             participants: []
           });
+          if (currentChat && !currentChat.communityId && communityData) {
+            currentChat.communityId = communityData;
+          }
         } catch (error) {
-          console.log("Not a community ID, trying as user ID for personal chat...");
+          console.log("Not a community ID, checking as personal user ID...");
         }
       }
 
-      // 3. If still not found, try to fetch/create as a personal chat with target user ID
       if (!currentChat) {
         try {
           currentChat = await createChat({
@@ -229,7 +229,7 @@ export default function ChatPage() {
             participants: [id as string]
           });
         } catch (error) {
-          console.error("Failed to fetch personal chat data:", error);
+          console.error("Failed to fetch chat data:", error);
         }
       }
 
@@ -239,7 +239,7 @@ export default function ChatPage() {
         setMessages(messagesData.reverse());
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error("Failed to fetch chat:", error);
     } finally {
       setLoading(false);
     }
@@ -249,19 +249,20 @@ export default function ChatPage() {
     e.preventDefault();
     if (!messageText.trim() || !chat || sending) return;
 
+    const trimmedText = messageText.trim();
     setSending(true);
     try {
-      if (socket) {
+      if (socket && isConnected) {
         socket.emit(EVENTS.NEW_MESSAGE, {
           chatId: chat._id,
-          content: messageText,
+          content: trimmedText,
           messageType: 'text'
         });
         setMessageText('');
       } else {
         const newMessage = await sendMessage({
           chatId: chat._id,
-          content: messageText,
+          content: trimmedText,
           messageType: 'text'
         });
         setMessages((prev) => [...prev, newMessage]);
@@ -274,11 +275,21 @@ export default function ChatPage() {
     }
   };
 
+  const handleSelectQuickTopic = (topic: string) => {
+    setMessageText(topic + " - ");
+  };
+
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="animate-spin text-green-500" size={48} />
+        <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#2E7D32]">
+            <Loader2 className="animate-spin" size={28} />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-black text-slate-900">Connecting to Charcha...</p>
+            <p className="text-xs text-slate-500 font-medium">Loading live room messages</p>
+          </div>
         </div>
       </AppLayout>
     );
@@ -287,13 +298,21 @@ export default function ChatPage() {
   if (!chat) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <p className="text-gray-500 font-bold mb-4">Chat not found or you don't have access.</p>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+            <Sprout size={32} />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-slate-900">Discussion Room Not Found</h2>
+            <p className="text-xs text-slate-500 max-w-sm">
+              This discussion room may have expired or you don't have access permissions.
+            </p>
+          </div>
           <button
-            onClick={() => router.back()}
-            className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold"
+            onClick={() => router.push('/charcha')}
+            className="px-6 py-3 bg-[#2E7D32] hover:bg-[#1B5E20] text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-green-900/20 cursor-pointer"
           >
-            Go Back
+            Back to Communities
           </button>
         </div>
       </AppLayout>
@@ -302,12 +321,16 @@ export default function ChatPage() {
 
   const isCommunity = chat.chatType === 'community';
   const otherParticipant = chat.chatType === 'personal'
-    ? chat.participants.find((p: any) => p._id !== user?.id)
+    ? chat.participants?.find((p: any) => p._id !== user?.id)
     : null;
 
   const chatTitle = isCommunity
-    ? chat.communityId?.name || chat.chatName
-    : otherParticipant?.name || 'Personal Chat';
+    ? chat.communityId?.name || chat.chatName || 'Kisan Community'
+    : otherParticipant?.name || 'Farmer Chat';
+
+  const chatSubtitle = isCommunity
+    ? `${chat.communityId?.members?.length || 0} Members`
+    : `@${otherParticipant?.username || 'kisan'}`;
 
   const chatAvatar = isCommunity
     ? chat.communityId?.avatar
@@ -317,17 +340,19 @@ export default function ChatPage() {
 
   return (
     <AppLayout>
+      {/* Toast Alert */}
       {callAlert && (
         <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
-          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 shadow-2xl backdrop-blur-md pointer-events-auto flex items-center gap-2 animate-bounce">
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3 text-xs sm:text-sm font-bold text-amber-900 shadow-2xl backdrop-blur-md pointer-events-auto flex items-center gap-2 animate-bounce">
             <span>⚠️</span>
             <span>{callAlert}</span>
           </div>
         </div>
       )}
 
+      {/* Ringing Overlay */}
       {shouldShowCallOverlay && (
-        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="w-full max-w-md pointer-events-auto">
             <RingOrCalling
               chatId={chat?._id || (id as string)}
@@ -341,127 +366,58 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto bg-white min-h-[calc(100vh-64px)] flex flex-col shadow-sm border-x border-gray-100">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ArrowLeft size={24} />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 font-bold overflow-hidden">
-                {chatAvatar ? (
-                  <Image src={chatAvatar} alt={chatTitle} width={48} height={48} className="w-full h-full object-cover" />
-                ) : isCommunity ? (
-                  <Users size={24} />
-                ) : (
-                  <UserIcon size={24} />
-                )}
-              </div>
-              <div>
-                <h1 className="font-black text-gray-900">{chatTitle}</h1>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  <p className="text-xs font-bold text-gray-400">
-                    {isConnected ? (isCommunity ? 'Live Discussion' : 'Online') : 'Connecting...'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Main Full-Height Chat Container */}
+      <div className="w-full max-w-4xl mx-auto h-[100dvh] md:h-[calc(100vh-1rem)] flex flex-col bg-white border-x border-slate-200 shadow-xl relative overflow-hidden">
+        
+        {/* Modular Header with Absolute Right Actions */}
+        <ChatHeader
+          chatTitle={chatTitle}
+          chatSubtitle={chatSubtitle}
+          chatAvatar={chatAvatar}
+          isCommunity={isCommunity}
+          isConnected={isConnected}
+          isCalling={isCalling}
+          showInfoDrawer={showInfoDrawer}
+          onToggleInfoDrawer={() => setShowInfoDrawer(!showInfoDrawer)}
+          onInitiateCall={handleCallButtonClick}
+        />
 
-          {/* Call action buttons for personal chats */}
-          {!isCommunity && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleCallButtonClick('audio')}
-                disabled={isCalling}
-                className="w-10 h-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
-                title="Start Audio Call"
-              >
-                <Phone size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCallButtonClick('video')}
-                disabled={isCalling}
-                className="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all shadow-md shadow-green-200 disabled:opacity-50"
-                title="Start Video Call"
-              >
-                <Video size={18} />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Modular Community Info Drawer */}
+        {isCommunity && showInfoDrawer && (
+          <CommunityDrawer
+            description={chat.communityId?.description}
+            tags={chat.communityId?.tags}
+            membersCount={chat.communityId?.members?.length}
+            onClose={() => setShowInfoDrawer(false)}
+          />
+        )}
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
-          {messages.map((msg, index) => {
-            const isOwnMessage = msg.sender._id === user?.id;
-            const showSender = !isOwnMessage && (index === 0 || messages[index - 1].sender._id !== msg.sender._id);
+        {/* Modular Message Stream */}
+        <MessageList
+          messages={messages}
+          currentUserId={user?.id}
+          isCommunity={isCommunity}
+          chatTitle={chatTitle}
+          quickTopics={QUICK_TOPICS}
+          onSelectTopic={handleSelectQuickTopic}
+          messagesEndRef={messagesEndRef}
+          chatContainerRef={chatContainerRef}
+          onScroll={handleScroll}
+          showScrollBottom={showScrollBottom}
+          onScrollToBottom={() => scrollToBottom(true)}
+        />
 
-            return (
-              <div key={msg._id} className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                {showSender && isCommunity && (
-                  <span className="text-[10px] font-black text-gray-400 mb-1 ml-11 uppercase tracking-widest">
-                    {msg.sender.name}
-                  </span>
-                )}
-                <div className={`flex items-end gap-2 max-w-[80%] ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {!isOwnMessage && isCommunity && (
-                    <div className="w-8 h-8 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0 mb-1">
-                      {msg.sender.profilePicture ? (
-                        <Image src={msg.sender.profilePicture} alt={msg.sender.name} width={32} height={32} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <UserIcon size={16} />
-                        </div>
-                      )}
+        {/* Modular Input Dock with Quick Topics */}
+        <MessageInput
+          messageText={messageText}
+          onChangeText={setMessageText}
+          onSubmit={handleSendMessage}
+          sending={sending}
+          isCommunity={isCommunity}
+          quickTopics={QUICK_TOPICS}
+          onSelectTopic={handleSelectQuickTopic}
+        />
 
-                    </div>
-
-                  )}
-                  <div className={`px-4 py-3 rounded-[24px] font-bold text-sm shadow-sm ${isOwnMessage
-                      ? 'bg-green-500 text-white rounded-tr-none shadow-green-100'
-                      : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
-                    }`}>
-                    {msg.content}
-                    <div className={`text-[9px] mt-1 font-bold ${isOwnMessage ? 'text-green-100' : 'text-gray-300'}`}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-100 bg-white">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-            <button type="button" className="p-3 text-gray-400 hover:bg-gray-50 rounded-2xl transition-all">
-              <ImageIcon size={20} />
-            </button>
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Type your message..."
-                className="w-full pl-6 pr-12 py-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={!messageText.trim() || sending}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center hover:bg-green-600 transition-all disabled:opacity-50 shadow-lg shadow-green-100"
-              >
-                {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </AppLayout>
   );
