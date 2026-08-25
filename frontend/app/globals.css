@@ -1,40 +1,32 @@
 @import "tailwindcss";
+@source "../app";
+@source "../components";
+@source "../context";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8FBF8;
+  --foreground: #0F172A;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 html {
@@ -42,14 +34,15 @@ html {
   width: 100%;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  background-color: #F8FBF8;
+  color: #0F172A;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: #F8FBF8;
+  color: #0F172A;
   overflow-x: hidden;
   width: 100%;
   min-height: 100vh;
-  min-height: -webkit-fill-available;
   min-height: 100dvh;
 }

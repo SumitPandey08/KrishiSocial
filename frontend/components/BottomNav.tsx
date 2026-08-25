@@ -37,7 +37,7 @@ export default function BottomNav() {
         if (isCenter) {
           return (
             <Link key={name} href={path} className="relative -top-4 sm:-top-5 group shrink-0">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40 border-3 sm:border-4 border-slate-950 transition-transform group-active:scale-95">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40 border-2 sm:border-4 border-slate-950 transition-transform group-active:scale-95">
                 <Sparkles size={20} className="text-slate-950 sm:w-6 sm:h-6" />
               </div>
             </Link>

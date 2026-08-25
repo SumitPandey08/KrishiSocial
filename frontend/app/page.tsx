@@ -116,7 +116,7 @@ function HomeContent() {
       </div>
 
       {/* Filter Bar - Instagram Style Pills */}
-      <div className="bg-white py-4 overflow-x-auto no-scrollbar border-b border-gray-50 sticky top-0 z-30">
+      <div className="bg-white py-3.5 overflow-x-auto no-scrollbar border-b border-gray-100 sticky top-14 sm:top-16 md:top-0 z-30">
         <div className="flex gap-2 px-4 min-w-max">
           {FILTERS.map((filter) => (
             <button

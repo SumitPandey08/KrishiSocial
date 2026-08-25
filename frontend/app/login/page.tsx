@@ -251,7 +251,7 @@ export default function LoginPage() {
                       placeholder="e.g. kisan@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-13 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl pl-11 pr-4 text-sm font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-400"
+                      className="w-full h-12 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl pl-11 pr-4 text-sm font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-400"
                       required
                       autoComplete="email"
                     />
@@ -281,7 +281,7 @@ export default function LoginPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-13 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl pl-11 pr-12 text-sm font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-400"
+                      className="w-full h-12 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl pl-11 pr-12 text-sm font-bold text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-400"
                       required
                       autoComplete="current-password"
                     />
@@ -314,7 +314,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-13 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-700/25 active:scale-[0.98] transition-all disabled:opacity-50 hover:shadow-emerald-700/40 cursor-pointer"
+                    className="w-full h-12 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-700/25 active:scale-[0.98] transition-all disabled:opacity-50 hover:shadow-emerald-700/40 cursor-pointer"
                   >
                     {isLoading ? (
                       <>
