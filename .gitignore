@@ -40,10 +40,9 @@ coverage/
 .nyc_output/
 
 # ==========================================
-# Mobile / React Native / Expo Generated Folders
+# Mobile App & Native Folders (Excluded for now)
 # ==========================================
-app/android/
-app/ios/
+app/
 android/
 ios/
 .kotlin/

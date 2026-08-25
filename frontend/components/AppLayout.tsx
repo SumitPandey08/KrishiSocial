@@ -12,11 +12,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useUser();
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/welcome' || pathname === '/get-started' || pathname === '/guide';
 
   useEffect(() => {
     if (!loading && !user && !isAuthPage) {
-      router.push('/login');
+      router.push('/welcome');
     }
   }, [user, loading, isAuthPage, router]);
 

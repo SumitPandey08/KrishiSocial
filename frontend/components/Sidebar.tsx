@@ -23,7 +23,7 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push('/welcome');
   };
 
   const navSections = [
