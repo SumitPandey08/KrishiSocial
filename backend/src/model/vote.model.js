@@ -27,21 +27,21 @@ const voteSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// One vote per user per post/comment
-// Using partialFilterExpression to ensure uniqueness only when the field exists
+// One vote per user per post (only applies when post is an ObjectId, ignoring comments/nulls)
 voteSchema.index(
   { user: 1, post: 1 }, 
   { 
     unique: true, 
-    partialFilterExpression: { post: { $exists: true } } 
+    partialFilterExpression: { post: { $type: "objectId" } } 
   }
 );
 
+// One vote per user per comment (only applies when comment is an ObjectId, ignoring posts/nulls)
 voteSchema.index(
   { user: 1, comment: 1 }, 
   { 
     unique: true, 
-    partialFilterExpression: { comment: { $exists: true } } 
+    partialFilterExpression: { comment: { $type: "objectId" } } 
   }
 );
 

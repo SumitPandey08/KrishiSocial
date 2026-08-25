@@ -207,40 +207,48 @@ export const togglePostVote = async (req, res) => {
         if (!post) return res.status(404).json({ message: "Post not found" });
 
         const existingVote = await Vote.findOne({ user: userId, post: postId });
+        let newUserVote = type;
 
         if (existingVote) {
             if (existingVote.type === type) {
                 // Remove vote (neutralize)
                 await existingVote.deleteOne();
+                newUserVote = null;
             } else {
                 // Change vote type
                 existingVote.type = type;
                 await existingVote.save();
+                newUserVote = type;
             }
         } else {
             // Create new vote
             await Vote.create({ user: userId, post: postId, type });
+            newUserVote = type;
         }
 
         // Recalculate scores
         const upvotes = await Vote.countDocuments({ post: postId, type: "upvote" });
         const downvotes = await Vote.countDocuments({ post: postId, type: "downvote" });
+        const votesScore = upvotes - downvotes;
 
-        post.upvotesCount = upvotes;
-        post.downvotesCount = downvotes;
-        post.votesScore = upvotes - downvotes;
-        await post.save();
+        const updatedPost = await Post.findByIdAndUpdate(
+            postId,
+            { upvotesCount: upvotes, downvotesCount: downvotes, votesScore },
+            { new: true }
+        );
 
-        // Update author reputation/helpScore
-        const authorId = post.user;
-        const scoreChange = type === "upvote" ? 1 : -1;
-        await User.findByIdAndUpdate(authorId, { $inc: { helpScore: scoreChange } });
+        // Update author reputation/helpScore safely
+        if (post.user) {
+            const scoreChange = type === "upvote" ? 1 : -1;
+            await User.findByIdAndUpdate(post.user, { $inc: { helpScore: scoreChange } }).catch(() => null);
+        }
 
         res.json({
             message: "Vote updated",
-            upvotesCount: post.upvotesCount,
-            downvotesCount: post.downvotesCount,
-            votesScore: post.votesScore
+            upvotesCount: updatedPost?.upvotesCount || upvotes,
+            downvotesCount: updatedPost?.downvotesCount || downvotes,
+            votesScore: updatedPost?.votesScore || votesScore,
+            userVote: newUserVote
         });
 
     } catch (error) {
@@ -384,40 +392,48 @@ export const toggleCommentVote = async (req, res) => {
         if (!comment) return res.status(404).json({ message: "Comment not found" });
 
         const existingVote = await Vote.findOne({ user: userId, comment: commentId });
+        let newUserVote = type;
 
         if (existingVote) {
             if (existingVote.type === type) {
                 // Remove vote (neutralize)
                 await existingVote.deleteOne();
+                newUserVote = null;
             } else {
                 // Change vote type
                 existingVote.type = type;
                 await existingVote.save();
+                newUserVote = type;
             }
         } else {
             // Create new vote
             await Vote.create({ user: userId, comment: commentId, type });
+            newUserVote = type;
         }
 
         // Recalculate scores
         const upvotes = await Vote.countDocuments({ comment: commentId, type: "upvote" });
         const downvotes = await Vote.countDocuments({ comment: commentId, type: "downvote" });
+        const votesScore = upvotes - downvotes;
 
-        comment.upvotesCount = upvotes;
-        comment.downvotesCount = downvotes;
-        comment.votesScore = upvotes - downvotes;
-        await comment.save();
+        const updatedComment = await Comment.findByIdAndUpdate(
+            commentId,
+            { upvotesCount: upvotes, downvotesCount: downvotes, votesScore },
+            { new: true }
+        );
 
-        // Update commenter reputation/helpScore
-        const authorId = comment.user;
-        const scoreChange = type === "upvote" ? 2 : -1; // More weight for helpful comments
-        await User.findByIdAndUpdate(authorId, { $inc: { helpScore: scoreChange } });
+        // Update commenter reputation/helpScore safely
+        if (comment.user) {
+            const scoreChange = type === "upvote" ? 2 : -1;
+            await User.findByIdAndUpdate(comment.user, { $inc: { helpScore: scoreChange } }).catch(() => null);
+        }
 
         res.json({
             message: "Comment vote updated",
-            upvotesCount: comment.upvotesCount,
-            downvotesCount: comment.downvotesCount,
-            votesScore: comment.votesScore
+            upvotesCount: updatedComment?.upvotesCount || upvotes,
+            downvotesCount: updatedComment?.downvotesCount || downvotes,
+            votesScore: updatedComment?.votesScore || votesScore,
+            userVote: newUserVote
         });
 
     } catch (error) {

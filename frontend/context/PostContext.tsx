@@ -177,7 +177,12 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    fetchPosts();
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        fetchPosts();
+      }
+    }
   }, [fetchPosts]);
 
   return (
