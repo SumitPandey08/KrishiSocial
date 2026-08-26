@@ -39,12 +39,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const isChatDetailPage = pathname.startsWith('/charcha/') && pathname !== '/charcha';
 
   return (
-    <div className="flex justify-center xl:gap-4 2xl:gap-8 max-w-[1600px] mx-auto min-h-screen w-full px-0 md:px-4 xl:px-6 2xl:px-0">
+    <div className="flex justify-center items-start md:gap-0 xl:gap-5 2xl:gap-8 max-w-[1560px] mx-auto min-h-screen w-full px-0 md:px-3 lg:px-4 xl:px-6 2xl:px-8">
       {/* Left Sidebar - Desktop only */}
       <Sidebar />
 
       {/* Main Content Area - Full width edge-to-edge on mobile, bordered card on desktop */}
-      <div className="flex-1 w-full min-w-0 max-w-full md:max-w-[700px] 2xl:max-w-[800px] md:border-x border-gray-100 bg-white min-h-screen relative shadow-xs flex flex-col">
+      <div className="flex-1 w-full min-w-0 max-w-full md:max-w-[650px] xl:max-w-[660px] 2xl:max-w-[740px] md:border-x border-slate-100 bg-white min-h-screen relative shadow-xs flex flex-col">
         {!isChatDetailPage && (
           <div className="md:hidden sticky top-0 z-40">
             <Header />

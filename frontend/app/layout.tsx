@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
-      <body className="antialiased bg-[#F8FBF8] min-h-full w-full overflow-x-hidden font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+      <body className="antialiased bg-[#F8FBF8] min-h-full w-full overflow-x-clip font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
         <AuthProvider>
           <SocketProvider>
             <PostProvider>

@@ -49,68 +49,74 @@ function HomeContent() {
 
   return (
     <div className="w-full bg-white">
-      {/* Today's Weather Card - Mobile Only */}
+      {/* Today's Weather Card - Mobile/Tablet Only */}
       <div className="px-4 pt-4 pb-2 xl:hidden">
-        <div className="bg-gradient-to-br from-[#2E7D32] to-[#43A047] rounded-[32px] p-6 text-white shadow-xl shadow-green-900/20 relative overflow-hidden min-h-[200px] flex flex-col justify-between">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+        <div className="bg-gradient-to-br from-[#2E7D32] to-[#43A047] rounded-[32px] p-7 text-white shadow-xl shadow-green-900/20 relative overflow-hidden min-h-[250px] flex flex-col justify-between">
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
           
-          <div className="relative z-10">
-            <h3 className="text-[10px] font-black opacity-80 uppercase tracking-widest mb-4">Today's Weather</h3>
+          <div className="relative z-10 space-y-4">
+            <h3 className="text-[10px] font-black opacity-80 uppercase tracking-widest">Today's Weather</h3>
             
             <div className="flex justify-between items-end">
               <div>
-                <span className="text-5xl font-black tracking-tighter">
+                <span className="text-5xl sm:text-6xl font-black tracking-tighter">
                   {loadingWeather ? "--" : (weather ? `${weather.temp}°C` : "28°C")}
                 </span>
-                <div className="flex items-center gap-1 mt-2 opacity-90">
-                  <MapPin size={12} />
-                  <span className="text-xs font-bold truncate max-w-[150px]">
+                <div className="flex items-center gap-1.5 mt-2 opacity-90">
+                  <MapPin size={14} />
+                  <span className="text-xs font-bold truncate max-w-[180px]">
                     {loadingWeather ? "Finding..." : (weather?.location || "Bhopal, MP")}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 text-right">
+              <div className="flex flex-col gap-3.5 text-right">
                 <div>
                   <p className="text-[9px] font-black opacity-60 uppercase tracking-tighter">Humidity</p>
-                  <p className="text-base font-black">{loadingWeather ? "--" : (weather?.humidity || "45")}%</p>
+                  <p className="text-lg font-black">{loadingWeather ? "--" : (weather?.humidity || "45")}%</p>
                 </div>
                 <div>
                   <p className="text-[9px] font-black opacity-60 uppercase tracking-tighter">Rain Chance</p>
-                  <p className="text-base font-black">{loadingWeather ? "--" : (weather?.rainChance || "10")}%</p>
+                  <p className="text-lg font-black">{loadingWeather ? "--" : (weather?.rainChance || "10")}%</p>
                 </div>
               </div>
             </div>
 
             <Link 
               href="/weather" 
-              className="mt-6 flex items-center justify-between bg-white/20 hover:bg-white/30 transition-colors rounded-2xl px-5 py-3.5 group border border-white/10 backdrop-blur-sm"
+              className="mt-6 flex items-center justify-between bg-white/20 hover:bg-white/30 transition-colors rounded-2xl px-5 py-4 group border border-white/10 backdrop-blur-sm shadow-xs"
             >
-              <span className="text-[10px] font-black uppercase tracking-widest">View Full Forecast</span>
-              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              <span className="text-xs font-black uppercase tracking-wider">View Full Forecast & Spray Advisory</span>
+              <ChevronRight size={17} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
       </div>
 
-      {/* AI Crop Doctor Banner */}
-      <div className="px-4 pt-2 pb-2">
+      {/* AI Crop Doctor Banner - Mobile/Tablet Only */}
+      <div className="px-4 pt-2 pb-2 xl:hidden">
         <Link 
           href="/disease-detector"
-          className="block bg-gradient-to-r from-emerald-950 via-green-900 to-slate-900 rounded-[28px] p-5 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden group hover:scale-[1.01] transition-all border border-emerald-500/20"
+          className="block bg-gradient-to-r from-emerald-950 via-green-900 to-slate-900 rounded-[28px] p-7 text-white shadow-xl shadow-emerald-950/20 relative overflow-hidden group hover:scale-[1.01] transition-all border border-emerald-500/20 min-h-[165px] flex flex-col justify-between"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider border border-emerald-400/30">
-                <Sparkles size={12} className="animate-pulse" /> RAG Doctor
+          <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-start justify-between relative z-10">
+            <div className="space-y-2 pr-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider border border-emerald-400/30">
+                <Sparkles size={12} className="animate-pulse" /> RAG Vision AI Doctor
               </div>
-              <h4 className="text-base font-black text-white tracking-tight">AI Crop Disease Doctor</h4>
-              <p className="text-[11px] text-emerald-100/70 font-medium">Scan leaf photos for instant diagnosis & scientific cures</p>
+              <h4 className="text-xl font-black text-white tracking-tight">AI Crop Disease Doctor</h4>
+              <p className="text-xs text-emerald-100/85 font-medium leading-relaxed">
+                Scan or upload leaf photos for instant diagnosis & scientific cures cited from ICAR/FAO research.
+              </p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform shrink-0 ml-3">
-              <Stethoscope size={20} />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform shrink-0">
+              <Stethoscope size={26} />
             </div>
+          </div>
+          <div className="relative z-10 mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between text-xs font-black text-emerald-300 uppercase tracking-wider">
+            <span>Launch Photo Scanner</span>
+            <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform text-emerald-400" />
           </div>
         </Link>
       </div>
