@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CloudSun, Droplets, Wind, AlertTriangle, SprayCan, ArrowLeft, RefreshCw, MapPin, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getWeather } from '@/services/farmerService';
+import { getLastCachedWeather } from '@/utils/weatherCache';
 import AppLayout from '@/components/AppLayout';
 
 interface ForecastItem {
@@ -24,18 +25,23 @@ interface WeatherData {
 
 function WeatherContent() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(() => {
+    const cached = getLastCachedWeather();
+    return (cached?.data as WeatherData) || null;
+  });
+  const [loading, setLoading] = useState(!weather);
   const [error, setError] = useState<string | null>(null);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
 
-  const fetchWeatherData = async () => {
-    setLoading(true);
+  const fetchWeatherData = async (forceRefresh = false) => {
+    if (forceRefresh || !weather) {
+      setLoading(true);
+    }
     setError(null);
     
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       setLoading(false);
-      setFallbackData();
+      if (!weather) setFallbackData();
       return;
     }
 
@@ -43,20 +49,21 @@ function WeatherContent() {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const data = await getWeather(latitude, longitude);
+          const data = await getWeather(latitude, longitude, forceRefresh);
           setWeather(data);
         } catch (err: unknown) {
           setError(err instanceof Error ? err.message : "Failed to fetch weather data");
-          setFallbackData();
+          if (!weather) setFallbackData();
         } finally {
           setLoading(false);
         }
       },
       () => {
         setError("Location access denied. Showing default weather.");
-        setFallbackData();
+        if (!weather) setFallbackData();
         setLoading(false);
-      }
+      },
+      { timeout: 8000, maximumAge: forceRefresh ? 0 : 10 * 60 * 1000 }
     );
   };
 
@@ -80,10 +87,10 @@ function WeatherContent() {
   };
 
   useEffect(() => {
-    fetchWeatherData();
+    fetchWeatherData(false);
   }, []);
 
-  if (loading) {
+  if (loading && !weather) {
     return (
       <div className="flex flex-col items-center justify-center py-24 min-h-[60vh]">
         <div className="w-12 h-12 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin mb-3" />
@@ -106,7 +113,7 @@ function WeatherContent() {
           </button>
           <h1 className="text-base font-black text-slate-900 tracking-tight">Weather & Spraying Advisory</h1>
         </div>
-        <button onClick={fetchWeatherData} className="p-2 rounded-xl text-emerald-700 hover:bg-emerald-50 transition-colors">
+        <button onClick={() => fetchWeatherData(true)} className="p-2 rounded-xl text-emerald-700 hover:bg-emerald-50 transition-colors" title="Refresh Weather">
           <RefreshCw size={18} />
         </button>
       </div>

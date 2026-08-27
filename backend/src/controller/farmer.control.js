@@ -3,6 +3,7 @@ import User from "../model/user.model.js";
 import { fetchMandiPrices } from "../services/mandiService.js";
 import { get7DayWeather, getLocationName } from "../services/weatherService.js";
 import { predictCropsV2 } from "../services/cropPrediction.js";
+import { getCache, setCache } from "../utils/redisCache.js";
 
 // Ensure node version is sufficient for fetch or install node-fetch/axios
 // Assuming Node 18+ where global fetch is available
@@ -20,13 +21,22 @@ export const getWeather = async (req, res) => {
       return res.status(400).json({ message: "Latitude and longitude are required" });
     }
 
+    const roundedLat = parseFloat(lat).toFixed(2);
+    const roundedLon = parseFloat(lon).toFixed(2);
+    const cacheKey = `weather:coords:${roundedLat}:${roundedLon}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const weatherData = await get7DayWeather(lat, lon);
 
     // Get location name via reverse geocoding
     const locationName = await getLocationName(lat, lon);
     const location = locationName || `${parseFloat(lat).toFixed(2)}°, ${parseFloat(lon).toFixed(2)}°`;
 
-    res.json({
+    const responsePayload = {
       temperature: weatherData.current.temp,
       humidity: weatherData.current.humidity,
       description: weatherData.current.description,
@@ -39,7 +49,12 @@ export const getWeather = async (req, res) => {
         icon: item.icon,
         description: item.description
       }))
-    });
+    };
+
+    // Cache in Redis for 30 minutes (1800 seconds)
+    await setCache(cacheKey, responsePayload, 1800);
+
+    res.json(responsePayload);
 
   } catch (error) {
     console.error("Get Weather Error:", error);

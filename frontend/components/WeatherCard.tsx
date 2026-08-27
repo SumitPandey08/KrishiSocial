@@ -4,37 +4,60 @@ import React, { useState, useEffect } from 'react';
 import { CloudRain, Droplets, ArrowRight, MapPin, CloudSun } from 'lucide-react';
 import Link from 'next/link';
 import { getWeather } from '@/services/farmerService';
+import { getLastCachedWeather } from '@/utils/weatherCache';
 
 export default function WeatherCard() {
-  const [weather, setWeather] = useState<{ temp: number; location: string; humidity: number; rainChance: number; icon: string } | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [weather, setWeather] = useState<{ temp: number; location: string; humidity: number; rainChance: number; icon: string } | null>(() => {
+    const cached = getLastCachedWeather();
+    if (cached?.data) {
+      return {
+        temp: Math.round(cached.data.temperature),
+        location: cached.data.location,
+        humidity: cached.data.humidity,
+        rainChance: 10,
+        icon: cached.data.icon || "01d",
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(!weather);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
-      setLoading(true);
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const data = await getWeather(latitude, longitude);
-          setWeather({
-            temp: Math.round(data.temperature),
-            location: data.location,
-            humidity: data.humidity,
-            rainChance: 10,
-            icon: data.icon
-          });
-        } catch (error) {
-          console.error("Failed to fetch weather:", error);
-          setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
-        } finally {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const data = await getWeather(latitude, longitude);
+            setWeather({
+              temp: Math.round(data.temperature),
+              location: data.location,
+              humidity: data.humidity,
+              rainChance: 10,
+              icon: data.icon || "01d"
+            });
+          } catch (error) {
+            console.error("Failed to fetch weather:", error);
+            if (!weather) {
+              setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
+            }
+          } finally {
+            setLoading(false);
+          }
+        },
+        () => {
+          if (!weather) {
+            setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
+          }
           setLoading(false);
-        }
-      }, () => {
-        setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
-        setLoading(false);
-      });
+        },
+        { timeout: 8000, maximumAge: 10 * 60 * 1000 }
+      );
     } else {
-      setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
+      if (!weather) {
+        setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10, icon: "01d" });
+      }
+      setLoading(false);
     }
   }, []);
 

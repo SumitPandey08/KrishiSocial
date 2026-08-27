@@ -8,6 +8,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { MapPin, ChevronRight, Sparkles, Stethoscope } from 'lucide-react';
 import { getWeather } from '@/services/farmerService';
+import { getLastCachedWeather } from '@/utils/weatherCache';
 import Link from 'next/link';
 
 function cn(...inputs: ClassValue[]) {
@@ -18,32 +19,50 @@ const FILTERS = ['All', 'Posts', 'Questions', 'My Crops', 'Nearby'];
 
 function HomeContent() {
   const [activeFilter, setActiveFilter] = useState('All');
-  const [weather, setWeather] = useState<{ temp: number; location: string; humidity: number; rainChance: number } | null>(null);
-  const [loadingWeather, setLoadingWeather] = useState(false);
+  const [weather, setWeather] = useState<{ temp: number; location: string; humidity: number; rainChance: number } | null>(() => {
+    const cached = getLastCachedWeather();
+    if (cached?.data) {
+      return {
+        temp: Math.round(cached.data.temperature),
+        location: cached.data.location,
+        humidity: cached.data.humidity,
+        rainChance: 10,
+      };
+    }
+    return null;
+  });
+  const [loadingWeather, setLoadingWeather] = useState(!weather);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
-      setLoadingWeather(true);
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const data = await getWeather(latitude, longitude);
-          setWeather({
-            temp: Math.round(data.temperature),
-            location: data.location,
-            humidity: data.humidity,
-            rainChance: 10
-          });
-        } catch (error) {
-          console.error("Failed to fetch weather:", error);
-          setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10 });
-        } finally {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const data = await getWeather(latitude, longitude);
+            setWeather({
+              temp: Math.round(data.temperature),
+              location: data.location,
+              humidity: data.humidity,
+              rainChance: 10
+            });
+          } catch (error) {
+            console.error("Failed to fetch weather:", error);
+            if (!weather) {
+              setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10 });
+            }
+          } finally {
+            setLoadingWeather(false);
+          }
+        },
+        () => {
+          if (!weather) {
+            setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10 });
+          }
           setLoadingWeather(false);
-        }
-      }, (error) => {
-        setWeather({ temp: 28, location: "Bhopal, MP", humidity: 45, rainChance: 10 });
-        setLoadingWeather(false);
-      });
+        },
+        { timeout: 8000, maximumAge: 10 * 60 * 1000 }
+      );
     }
   }, []);
 

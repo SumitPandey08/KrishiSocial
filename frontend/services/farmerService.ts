@@ -1,10 +1,23 @@
 import api from "./api";
+import { getCachedWeatherByCoords, setCachedWeather } from "@/utils/weatherCache";
 
-export const getWeather = async (lat: number, lon: number) => {
+export const getWeather = async (lat: number, lon: number, forceRefresh = false) => {
   try {
+    if (!forceRefresh) {
+      const cached = getCachedWeatherByCoords(lat, lon);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const response = await api.get("/farmer/weather", {
       params: { lat, lon }
     });
+
+    if (response.data) {
+      setCachedWeather(lat, lon, response.data);
+    }
+
     return response.data;
   } catch (error) {
     console.error("Get weather error:", error);
